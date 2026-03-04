@@ -1826,6 +1826,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, projectID string, na
 		// compose-go can panic on malformed inputs (e.g. invalid depends_on format), so we
 		// catch both returned errors and panics here.
 		var composeValidateErr error
+		validationProjectName := normalizeComposeProjectName(proj.Name)
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
@@ -1838,7 +1839,11 @@ func (s *ProjectService) UpdateProject(ctx context.Context, projectID string, na
 					{Filename: "compose.yaml", Content: []byte(*composeContent)},
 				},
 			}
-			_, composeValidateErr = loader.LoadWithContext(ctx, cfg)
+			_, composeValidateErr = loader.LoadWithContext(ctx, cfg, func(opts *loader.Options) {
+				if validationProjectName != "" {
+					opts.SetProjectName(validationProjectName, true)
+				}
+			})
 		}()
 		if composeValidateErr != nil {
 			return nil, fmt.Errorf("invalid compose file: %w", composeValidateErr)

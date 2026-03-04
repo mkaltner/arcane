@@ -476,6 +476,48 @@ func TestProjectService_UpdateProject_RenameFailsWhenProjectRunning(t *testing.T
 	assert.Equal(t, "Foo", *fromDB.DirName)
 }
 
+func TestProjectService_UpdateProject_ValidatesComposeUsingExistingProjectName(t *testing.T) {
+	db := setupProjectTestDB(t)
+	ctx := context.Background()
+
+	projectsDir := t.TempDir()
+	t.Setenv("PROJECTS_DIRECTORY", projectsDir)
+
+	settingsService, err := NewSettingsService(ctx, db)
+	require.NoError(t, err)
+
+	eventService := NewEventService(db, nil, nil)
+	svc := NewProjectService(db, settingsService, eventService, nil, nil, nil)
+
+	dirName := "demo"
+	projectPath := filepath.Join(projectsDir, dirName)
+	require.NoError(t, os.MkdirAll(projectPath, 0o755))
+
+	project := &models.Project{
+		BaseModel: models.BaseModel{ID: "proj-compose-name"},
+		Name:      "demo",
+		DirName:   &dirName,
+		Path:      projectPath,
+		Status:    models.ProjectStatusStopped,
+	}
+	require.NoError(t, db.Create(project).Error)
+
+	compose := `name: ${COMPOSE_PROJECT_NAME}
+services:
+  app:
+    image: nginx:alpine
+`
+	env := "COMPOSE_PROJECT_NAME=\n"
+
+	updated, err := svc.UpdateProject(ctx, project.ID, nil, ptr(compose), ptr(env), models.User{
+		BaseModel: models.BaseModel{ID: "u1"},
+		Username:  "tester",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, updated)
+	assert.Equal(t, "demo", updated.Name)
+}
+
 func TestProjectService_MergeBuildTags(t *testing.T) {
 	tags := mergeBuildTags("example/app:latest", []string{"example/app:sha", "example/app:latest", " "})
 	assert.Equal(t, []string{"example/app:latest", "example/app:sha"}, tags)
