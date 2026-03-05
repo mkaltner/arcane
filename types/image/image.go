@@ -516,6 +516,9 @@ func (p PullOptions) GetCredentials() []containerregistry.Credential {
 // to string keys. The descriptor is derived from the first repo digest if available.
 func NewDetailSummary(src *image.InspectResponse) DetailSummary {
 	var out DetailSummary
+	if src == nil {
+		return out
+	}
 
 	out.ID = src.ID
 	out.RepoTags = append(out.RepoTags, src.RepoTags...)
@@ -551,9 +554,11 @@ func NewDetailSummary(src *image.InspectResponse) DetailSummary {
 	out.Os = src.Os
 	out.Size = src.Size
 
-	out.GraphDriver.Name = src.GraphDriver.Name
-	if src.GraphDriver.Data != nil {
-		out.GraphDriver.Data = src.GraphDriver.Data
+	if src.GraphDriver != nil {
+		out.GraphDriver.Name = src.GraphDriver.Name
+		if src.GraphDriver.Data != nil {
+			out.GraphDriver.Data = src.GraphDriver.Data
+		}
 	}
 
 	out.RootFs.Type = src.RootFS.Type
