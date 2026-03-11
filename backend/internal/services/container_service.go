@@ -45,6 +45,31 @@ func NewContainerService(db *database.DB, eventService *EventService, dockerServ
 	}
 }
 
+func buildCleanNetworkingConfig(containerInspect container.InspectResponse) *network.NetworkingConfig {
+	if containerInspect.NetworkSettings == nil || len(containerInspect.NetworkSettings.Networks) == 0 {
+		return nil
+	}
+
+	endpointsConfig := make(map[string]*network.EndpointSettings, len(containerInspect.NetworkSettings.Networks))
+	for netName, ep := range containerInspect.NetworkSettings.Networks {
+		if ep == nil {
+			continue
+		}
+
+		endpointsConfig[netName] = &network.EndpointSettings{
+			Aliases: append([]string(nil), ep.Aliases...),
+		}
+	}
+
+	if len(endpointsConfig) == 0 {
+		return nil
+	}
+
+	return &network.NetworkingConfig{
+		EndpointsConfig: endpointsConfig,
+	}
+}
+
 func (s *ContainerService) StartContainer(ctx context.Context, containerID string, user models.User) error {
 	dockerClient, err := s.dockerService.GetClient(ctx)
 	if err != nil {
@@ -161,7 +186,8 @@ func (s *ContainerService) RedeployContainer(ctx context.Context, containerID st
 
 	// Stop the container if running
 	if containerInspect.State.Running {
-		if stopErr := dockerClient.ContainerStop(ctx, containerID, client.ContainerStopOptions{Timeout: new(30)}); stopErr != nil {
+		stopTimeout := 30
+		if stopErr := dockerClient.ContainerStop(ctx, containerID, client.ContainerStopOptions{Timeout: &stopTimeout}); stopErr != nil {
 			slog.WarnContext(ctx, "failed to stop container during redeploy", "error", stopErr)
 		}
 	}
@@ -181,9 +207,7 @@ func (s *ContainerService) RedeployContainer(ctx context.Context, containerID st
 		ctx,
 		containerInspect.Config,
 		containerInspect.HostConfig,
-		&network.NetworkingConfig{
-			EndpointsConfig: containerInspect.NetworkSettings.Networks,
-		},
+		buildCleanNetworkingConfig(containerInspect),
 		nil,
 		containerName,
 	)
