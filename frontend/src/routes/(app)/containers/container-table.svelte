@@ -608,8 +608,8 @@
 							<Spinner class="size-4" />
 						{:else}
 							<RedeployIcon class="size-4" />
-						{/if}
-						{m.compose_pull_redeploy()}
+					{m.compose_pull_redeploy()}
+					</DropdownMenu.Item>
 					</DropdownMenu.Item}
 				{/if}
 

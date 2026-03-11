@@ -152,15 +152,16 @@ func (s *ContainerService) RedeployContainer(ctx context.Context, containerID st
 	if pullErr != nil {
 		slog.WarnContext(ctx, "failed to pull image during redeploy", "image", imageName, "error", pullErr)
 	} else {
+		defer pullReader.Close()
 		// Drain the pull response
-		io.Copy(io.Discard, pullReader)
-		pullReader.Close()
+		if _, err := io.Copy(io.Discard, pullReader); err != nil {
+			slog.WarnContext(ctx, "failed to drain pull response", "error", err)
+		}
 	}
 
 	// Stop the container if running
 	if containerInspect.State.Running {
-		timeout := 30
-		if stopErr := dockerClient.ContainerStop(ctx, containerID, client.ContainerStopOptions{Timeout: &timeout}); stopErr != nil {
+		if stopErr := dockerClient.ContainerStop(ctx, containerID, client.ContainerStopOptions{Timeout: new(30)}); stopErr != nil {
 			slog.WarnContext(ctx, "failed to stop container during redeploy", "error", stopErr)
 		}
 	}
