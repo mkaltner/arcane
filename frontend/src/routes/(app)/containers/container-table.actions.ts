@@ -189,8 +189,8 @@ export function createContainerActions({
 		const containerName = getContainerDisplayName(container);
 
 		openConfirmDialog({
-			title: m.projects_redeploy_confirm_title(),
-			message: m.projects_redeploy_confirm_message({ resource: containerName }),
+			title: m.common_confirm_redeploy_title(),
+			message: m.common_confirm_redeploy_message(),
 			confirm: {
 				label: m.compose_pull_redeploy(),
 				destructive: false,

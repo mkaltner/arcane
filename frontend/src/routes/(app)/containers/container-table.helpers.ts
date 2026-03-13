@@ -30,8 +30,9 @@ const actionStatusMessages: Record<ActionStatus, () => string> = {
 	starting: () => m.common_action_starting(),
 	stopping: () => m.common_action_stopping(),
 	restarting: () => m.common_action_restarting(),
-	updating: () => m.common_action_updating(),
-	removing: () => m.common_action_removing(),
+	redeploying: () => m.common_redeploying(),
+	updating: () => m.containers_updating(),
+	removing: () => m.common_removing(),
 	'': () => ''
 };
 
