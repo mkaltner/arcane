@@ -599,19 +599,19 @@
 						{/if}
 						{m.common_restart()}
 					</DropdownMenu.Item>
-
-					<DropdownMenu.Item
-						onclick={() => handleRedeployContainer(item)}
-						disabled={status === 'redeploying' || isAnyLoading}
-					>
-						{#if status === 'redeploying'}
-							<Spinner class="size-4" />
-						{:else}
-							<RedeployIcon class="size-4" />
-						{/if}
-						{m.compose_pull_redeploy()}
-					</DropdownMenu.Item>
 				{/if}
+
+				<DropdownMenu.Item
+					onclick={() => handleRedeployContainer(item)}
+					disabled={status === 'redeploying' || isAnyLoading}
+				>
+					{#if status === 'redeploying'}
+						<Spinner class="size-4" />
+					{:else}
+						<RedeployIcon class="size-4" />
+					{/if}
+					{m.compose_pull_redeploy()}
+				</DropdownMenu.Item>
 
 				<DropdownMenu.Separator />
 

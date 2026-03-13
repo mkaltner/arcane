@@ -140,8 +140,8 @@
 	}));
 
 	const redeployMutation = createMutation(() => ({
-		mutationKey: ['action', 'redeploy', id],
-		mutationFn: () => tryCatch(projectService.redeployProject(id)),
+		mutationKey: ['action', 'redeploy', type, id],
+		mutationFn: () => tryCatch(type === 'container' ? containerService.redeployContainer(id) : projectService.redeployProject(id)),
 		onMutate: () => setLoading('redeploy', true),
 		onSettled: () => setLoading('redeploy', false)
 	}));
@@ -416,9 +416,16 @@
 						handleApiResultWithCallbacks({
 							result,
 							message: m.common_action_failed_with_type({ action: m.common_redeploy(), type }),
-							onSuccess: async () => {
+							onSuccess: async (data) => {
 								toast.success(m.common_redeploy_success({ type: name || type }));
-								onActionComplete('running');
+
+								const newId = data?.data?.newId;
+
+								if (newId) {
+									goto(`/containers/${newId}`);
+								} else {
+									goto('/containers');
+								}
 							}
 						});
 					}
@@ -868,6 +875,13 @@
 				{/if}
 
 				{#if type === 'container'}
+				    <ArcaneButton
+						action="redeploy"
+						size={adaptiveIconOnly ? 'icon' : 'default'}
+						showLabel={!adaptiveIconOnly}
+						onclick={() => confirmAction('redeploy')}
+						loading={uiLoading.redeploy}
+					/>
 					<ArcaneButton
 						action="remove"
 						size={adaptiveIconOnly ? 'icon' : 'default'}
@@ -1003,6 +1017,9 @@
 							{/if}
 
 							{#if type === 'container'}
+							    <DropdownMenu.Item onclick={() => confirmAction('redeploy')} disabled={uiLoading.redeploy}>
+									{m.common_redeploy()}
+								</DropdownMenu.Item>
 								<DropdownMenu.Item onclick={() => confirmAction('remove')} disabled={uiLoading.remove}>
 									{m.common_remove()}
 								</DropdownMenu.Item>
@@ -1127,6 +1144,7 @@
 			{/if}
 
 			{#if type === 'container'}
+				<ArcaneButton action="redeploy" onclick={() => confirmAction('redeploy')} loading={uiLoading.redeploy} />
 				<ArcaneButton action="remove" onclick={() => confirmAction('remove')} loading={uiLoading.remove} />
 			{:else}
 				<ArcaneButton action="redeploy" onclick={() => confirmAction('redeploy')} loading={uiLoading.redeploy} />
@@ -1230,14 +1248,13 @@
 						{/if}
 
 						{#if type === 'container'}
+							<DropdownMenu.Item onclick={() => confirmAction('redeploy')} disabled={uiLoading.redeploy}>
+								{m.common_redeploy()}
+							</DropdownMenu.Item>
 							<DropdownMenu.Item onclick={() => confirmAction('remove')} disabled={uiLoading.remove}>
 								{m.common_remove()}
 							</DropdownMenu.Item>
 						{:else}
-							<DropdownMenu.Item onclick={() => confirmAction('redeploy')} disabled={uiLoading.redeploy}>
-								{m.common_redeploy()}
-							</DropdownMenu.Item>
-
 							{#if type === 'project'}
 								{#if projectHasBuildDirective}
 									<DropdownMenu.Item onclick={handleProjectBuild} disabled={projectBuilding || uiLoading.building}>
