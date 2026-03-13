@@ -41,6 +41,7 @@
 		CodeIcon
 	} from '$lib/icons';
 	import { parse as parseYaml } from 'yaml';
+	import type { IncludeFile } from '$lib/types/project.type';
 	let { data } = $props();
 	let container = $derived(data?.container as ContainerDetailsDto);
 	let stats = $state(null as ContainerStatsType | null);
@@ -228,24 +229,37 @@
 	const project = $derived(data?.project ?? null);
 	const composeServiceName = $derived(container?.labels?.['com.docker.compose.service'] ?? '');
 
-	// Only show the Compose tab if the service is directly defined in the project's compose file.
-	// When a project uses `include:` directives, the root compose is just a wrapper — not useful
-	// to edit from a container view. In that case we hide the tab entirely.
-	const showComposeTab = $derived(
-		!!project?.composeContent &&
-			!!composeServiceName &&
-			(() => {
+	// Find which file (root compose or an include file) directly defines this service.
+	// Returns { includeFile: null } for root compose, { includeFile: <file> } for a sub-file,
+	// or null if the service isn't found anywhere (hides the tab).
+	const serviceComposeSource = $derived(
+		(() => {
+			if (!project || !composeServiceName) return null;
+
+			const hasService = (content: string): boolean => {
 				try {
-					const parsed = parseYaml(project!.composeContent!) as Record<string, unknown> | null;
-					return (
-						!!parsed?.services &&
-						!!(parsed.services as Record<string, unknown>)[composeServiceName]
-					);
+					const parsed = parseYaml(content) as Record<string, unknown> | null;
+					return !!(parsed?.services && (parsed.services as Record<string, unknown>)[composeServiceName]);
 				} catch {
 					return false;
 				}
-			})()
+			};
+
+			if (project.composeContent && hasService(project.composeContent)) {
+				return { includeFile: null as IncludeFile | null };
+			}
+
+			for (const f of project.includeFiles ?? []) {
+				if (hasService(f.content)) {
+					return { includeFile: f };
+				}
+			}
+
+			return null;
+		})()
 	);
+
+	const showComposeTab = $derived(!!serviceComposeSource);
 
 	const tabItems = $derived<TabItem[]>([
 		{ value: 'overview', label: m.common_overview(), icon: ContainersIcon },
@@ -410,9 +424,13 @@
 				</Tabs.Content>
 			{/if}
 
-			{#if project && showComposeTab}
+			{#if project && serviceComposeSource}
 				<Tabs.Content value="compose" class="h-full min-h-0">
-					<ContainerComposePanel {project} serviceName={composeServiceName} />
+					<ContainerComposePanel
+						{project}
+						serviceName={composeServiceName}
+						includeFile={serviceComposeSource.includeFile}
+					/>
 				</Tabs.Content>
 			{/if}
 		{/snippet}
