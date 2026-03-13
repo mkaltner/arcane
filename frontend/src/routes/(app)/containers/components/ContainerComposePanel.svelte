@@ -16,9 +16,10 @@
 	} = $props();
 
 	let composeContent = $state(project.composeContent ?? '');
+	$effect(() => { composeContent = project.composeContent ?? ''; });
 	let panelOpen = $state(true);
 	let isSaving = $state(false);
-	let saveError = $state<string | undefined>(undefined);
+	let saveError = $state('');
 
 	const isReadOnly = $derived(!!project.gitOpsManagedBy);
 
@@ -30,7 +31,7 @@
 			toast.success('Compose file saved successfully');
 		} catch (err: any) {
 			saveError = err?.message ?? 'Failed to save compose file';
-			toast.error(saveError);
+			toast.error(saveError as string);
 		} finally {
 			isSaving = false;
 		}
