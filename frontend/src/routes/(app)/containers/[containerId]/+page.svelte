@@ -231,15 +231,21 @@
 	// Only show the Compose tab if the service is directly defined in the project's compose file.
 	// When a project uses `include:` directives, the root compose is just a wrapper — not useful
 	// to edit from a container view. In that case we hide the tab entirely.
-	const showComposeTab = $derived((): boolean => {
-		if (!project?.composeContent || !composeServiceName) return false;
-		try {
-			const parsed = parseYaml(project.composeContent) as Record<string, unknown> | null;
-			return !!parsed?.services && !!(parsed.services as Record<string, unknown>)[composeServiceName];
-		} catch {
-			return false;
-		}
-	});
+	const showComposeTab = $derived(
+		!!project?.composeContent &&
+			!!composeServiceName &&
+			(() => {
+				try {
+					const parsed = parseYaml(project!.composeContent!) as Record<string, unknown> | null;
+					return (
+						!!parsed?.services &&
+						!!(parsed.services as Record<string, unknown>)[composeServiceName]
+					);
+				} catch {
+					return false;
+				}
+			})()
+	);
 
 	const tabItems = $derived<TabItem[]>([
 		{ value: 'overview', label: m.common_overview(), icon: ContainersIcon },
@@ -249,7 +255,7 @@
 		...(showConfiguration ? [{ value: 'config', label: m.common_configuration(), icon: SettingsIcon }] : []),
 		...(showNetworkTab ? [{ value: 'network', label: m.containers_nav_networks(), icon: NetworksIcon }] : []),
 		...(hasMounts ? [{ value: 'storage', label: m.containers_nav_storage(), icon: VolumesIcon }] : []),
-		...(showComposeTab() ? [{ value: 'compose', label: 'Compose', icon: CodeIcon }] : [])
+		...(showComposeTab ? [{ value: 'compose', label: 'Compose', icon: CodeIcon }] : [])
 	]);
 
 	$effect(() => {
@@ -404,7 +410,7 @@
 				</Tabs.Content>
 			{/if}
 
-			{#if project && showComposeTab()}
+			{#if project && showComposeTab}
 				<Tabs.Content value="compose" class="h-full min-h-0">
 					<ContainerComposePanel {project} serviceName={composeServiceName} />
 				</Tabs.Content>
