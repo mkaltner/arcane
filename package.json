@@ -15,8 +15,14 @@
     "prepare": "husky"
   },
   "lint-staged": {
-    "*": [
-      "sh -c 'just format all --check'"
+    "frontend/**/*": [
+      "sh -c 'just format frontend --check'"
+    ],
+    "{tests,email-templates}/**/*.{ts,tsx,js,jsx,mts,cts}": [
+      "sh -c 'just format js --check'"
+    ],
+    "{backend,cli,types}/**/*": [
+      "sh -c 'just format go --check'"
     ]
   },
   "devDependencies": {
