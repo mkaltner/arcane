@@ -832,32 +832,68 @@ func NewSummary(c container.Summary) Summary {
 }
 
 // NewDetails creates a Details from a docker container.InspectResponse.
-func NewDetails(c *container.InspectResponse) Details {
+func extractPorts(c *container.InspectResponse) []Port {
 	ports := make([]Port, 0)
-	if c.NetworkSettings != nil && c.NetworkSettings.Ports != nil {
-		for p, bindings := range c.NetworkSettings.Ports {
-			privatePort := int(p.Num())
-			typ := string(p.Proto())
+	if c.NetworkSettings == nil || c.NetworkSettings.Ports == nil {
+		return ports
+	}
 
-			// When no host bindings exist, still include the private port
-			if len(bindings) == 0 {
-				ports = append(ports, Port{
-					PrivatePort: privatePort,
-					Type:        typ,
-				})
-				continue
-			}
-			for _, b := range bindings {
-				pub, _ := strconv.Atoi(b.HostPort)
-				ports = append(ports, Port{
-					IP:          b.HostIP.String(),
-					PrivatePort: privatePort,
-					PublicPort:  pub,
-					Type:        typ,
-				})
-			}
+	for p, bindings := range c.NetworkSettings.Ports {
+		privatePort := int(p.Num())
+		typ := string(p.Proto())
+
+		// When no host bindings exist, still include the private port
+		if len(bindings) == 0 {
+			ports = append(ports, Port{
+				PrivatePort: privatePort,
+				Type:        typ,
+			})
+			continue
+		}
+		for _, b := range bindings {
+			pub, _ := strconv.Atoi(b.HostPort)
+			ports = append(ports, Port{
+				IP:          b.HostIP.String(),
+				PrivatePort: privatePort,
+				PublicPort:  pub,
+				Type:        typ,
+			})
 		}
 	}
+	return ports
+}
+
+func extractComposeInfo(labels map[string]string) *ComposeInfo {
+	projectName, hasProject := labels["com.docker.compose.project"]
+	if !hasProject {
+		return nil
+	}
+
+	serviceName, hasService := labels["com.docker.compose.service"]
+	if !hasService {
+		return nil
+	}
+
+	info := &ComposeInfo{
+		ProjectName: projectName,
+		ServiceName: serviceName,
+	}
+
+	if configFile, ok := labels["com.docker.compose.config-files"]; ok {
+		info.ConfigFile = configFile
+	}
+	if workingDir, ok := labels["com.docker.compose.project.working_dir"]; ok {
+		info.WorkingDir = workingDir
+	}
+	if projectDir, ok := labels["com.docker.compose.project.config_files"]; ok {
+		info.ProjectDir = projectDir
+	}
+
+	return info
+}
+
+func NewDetails(c *container.InspectResponse) Details {
+	ports := extractPorts(c)
 
 	mounts := make([]Mount, 0, len(c.Mounts))
 	for _, m := range c.Mounts {
@@ -922,24 +958,7 @@ func NewDetails(c *container.InspectResponse) Details {
 	}
 
 	// Extract Docker Compose information from labels if present
-	var composeInfo *ComposeInfo
-	if projectName, hasProject := labels["com.docker.compose.project"]; hasProject {
-		if serviceName, hasService := labels["com.docker.compose.service"]; hasService {
-			composeInfo = &ComposeInfo{
-				ProjectName: projectName,
-				ServiceName: serviceName,
-			}
-			if configFile, ok := labels["com.docker.compose.config-files"]; ok {
-				composeInfo.ConfigFile = configFile
-			}
-			if workingDir, ok := labels["com.docker.compose.project.working_dir"]; ok {
-				composeInfo.WorkingDir = workingDir
-			}
-			if projectDir, ok := labels["com.docker.compose.project.config_files"]; ok {
-				composeInfo.ProjectDir = projectDir
-			}
-		}
-	}
+	composeInfo := extractComposeInfo(labels)
 
 	return Details{
 		ID:         c.ID,
