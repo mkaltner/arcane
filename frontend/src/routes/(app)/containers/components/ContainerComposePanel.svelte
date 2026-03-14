@@ -8,8 +8,6 @@
 	import { AlertIcon, ExternalLinkIcon } from '$lib/icons';
 	import * as m from '$lib/paraglide/messages';
 	import { invalidateAll } from '$app/navigation';
-	import { untrack } from 'svelte';
-
 	let {
 		project,
 		serviceName,
@@ -22,35 +20,9 @@
 
 	const sourceContent = $derived(includeFile ? includeFile.content : (project.composeContent ?? ''));
 
-	let composeContent = $state(sourceContent);
+	let composeContent = $state(includeFile ? includeFile.content : (project.composeContent ?? ''));
 
-	// Track file identity to detect context switches (different container/file)
-	const fileIdentity = $derived(`${project.id}:${includeFile?.relativePath ?? 'compose.yml'}`);
-	let prevFileIdentity = $state(fileIdentity);
-
-	// Update composeContent when source changes
-	// Force reset on file identity change (context switch to different file)
-	// Skip update only if same file has unsaved edits (isDirty)
-	let prevSourceContent = $state(sourceContent);
 	const isDirty = $derived(composeContent !== sourceContent);
-
-	$effect(() => {
-		// Capture reactive dependencies explicitly outside untrack
-		const currentFileIdentity = fileIdentity;
-		const currentSourceContent = sourceContent;
-
-		// Mutations inside untrack() to avoid re-triggering this effect
-		untrack(() => {
-			const identityChanged = currentFileIdentity !== prevFileIdentity;
-			const sourceChanged = currentSourceContent !== prevSourceContent;
-
-			if (identityChanged || (sourceChanged && !isDirty)) {
-				composeContent = currentSourceContent;
-				prevSourceContent = currentSourceContent;
-				prevFileIdentity = currentFileIdentity;
-			}
-		});
-	});
 
 	let panelOpen = $state(true);
 	let isSaving = $state(false);
@@ -68,8 +40,9 @@
 			}
 			await invalidateAll();
 			toast.success(m.container_compose_save_success());
-		} catch (err: any) {
-			toast.error(err?.message ?? m.container_compose_save_failed());
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : m.container_compose_save_failed();
+			toast.error(message);
 		} finally {
 			isSaving = false;
 		}

@@ -52,11 +52,11 @@ export const load: PageLoad = async ({ params, parent }) => {
 			settings,
 			project
 		};
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Failed to load container:', err);
-		if (err.status === 404) {
+		if (typeof err === 'object' && err !== null && 'status' in err && (err as { status: number }).status === 404) {
 			throw err;
 		}
-		throw error(500, err.message || 'Failed to load container details');
+		throw error(500, err instanceof Error ? err.message : 'Failed to load container details');
 	}
 };
