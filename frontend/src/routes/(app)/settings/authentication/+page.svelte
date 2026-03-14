@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { z } from 'zod/v4';
-	import { getContext, onMount } from 'svelte';
+	import { getContext } from 'svelte';
 	import { ArcaneButton } from '$lib/components/arcane-button/index.js';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -13,14 +13,11 @@
 	import * as ArcaneTooltip from '$lib/components/arcane-tooltip';
 	import { m } from '$lib/paraglide/messages';
 	import { LockIcon, InfoIcon } from '$lib/icons';
-	import SearchableSelect from '$lib/components/form/searchable-select.svelte';
-	import TextInputWithLabel from '$lib/components/form/text-input-with-label.svelte';
 	import settingsStore from '$lib/stores/config-store';
 	import { SettingsPageLayout } from '$lib/layouts';
 	import { CopyButton } from '$lib/components/ui/copy-button';
 	import { createSettingsForm } from '$lib/utils/settings-form.util';
 	import * as Alert from '$lib/components/ui/alert';
-	import { networkService } from '$lib/services/network-service';
 
 	let { data }: { data: PageData } = $props();
 	const currentSettings = $derived<Settings>($settingsStore || data.settings!);
@@ -36,12 +33,6 @@
 				.min(15, m.security_session_timeout_min())
 				.max(1440, m.security_session_timeout_max()),
 			authPasswordPolicy: z.enum(['basic', 'standard', 'strong']),
-			trivyImage: z.string(),
-			trivyNetwork: z.string(),
-			trivyResourceLimitsEnabled: z.boolean(),
-			trivyCpuLimit: z.coerce.number().int(m.security_session_timeout_integer()).nonnegative(),
-			trivyMemoryLimitMb: z.coerce.number().int().nonnegative(),
-			trivyConcurrentScanContainers: z.coerce.number().int().min(1, m.security_trivy_concurrent_scan_containers_min()),
 			oidcEnabled: z.boolean(),
 			oidcMergeAccounts: z.boolean(),
 			oidcSkipTlsVerify: z.boolean(),
@@ -73,12 +64,6 @@
 		authLocalEnabled: currentSettings.authLocalEnabled,
 		authSessionTimeout: currentSettings.authSessionTimeout,
 		authPasswordPolicy: currentSettings.authPasswordPolicy,
-		trivyImage: currentSettings.trivyImage,
-		trivyNetwork: currentSettings.trivyNetwork || 'bridge',
-		trivyResourceLimitsEnabled: currentSettings.trivyResourceLimitsEnabled ?? true,
-		trivyCpuLimit: currentSettings.trivyCpuLimit ?? 1,
-		trivyMemoryLimitMb: currentSettings.trivyMemoryLimitMb ?? 0,
-		trivyConcurrentScanContainers: currentSettings.trivyConcurrentScanContainers ?? 1,
 		oidcEnabled: currentSettings.oidcEnabled,
 		oidcMergeAccounts: currentSettings.oidcMergeAccounts,
 		oidcSkipTlsVerify: currentSettings.oidcSkipTlsVerify,
@@ -93,7 +78,6 @@
 		oidcProviderLogoUrl: currentSettings.oidcProviderLogoUrl
 	});
 
-	// Security page needs custom submit logic for OIDC client secret handling
 	let { formInputs, form, settingsForm } = $derived(
 		createSettingsForm({
 			schema: formSchema,
@@ -102,12 +86,6 @@
 				authLocalEnabled: ($settingsStore || data.settings!).authLocalEnabled,
 				authSessionTimeout: ($settingsStore || data.settings!).authSessionTimeout,
 				authPasswordPolicy: ($settingsStore || data.settings!).authPasswordPolicy,
-				trivyImage: ($settingsStore || data.settings!).trivyImage,
-				trivyNetwork: ($settingsStore || data.settings!).trivyNetwork || 'bridge',
-				trivyResourceLimitsEnabled: ($settingsStore || data.settings!).trivyResourceLimitsEnabled ?? true,
-				trivyCpuLimit: ($settingsStore || data.settings!).trivyCpuLimit ?? 1,
-				trivyMemoryLimitMb: ($settingsStore || data.settings!).trivyMemoryLimitMb ?? 0,
-				trivyConcurrentScanContainers: ($settingsStore || data.settings!).trivyConcurrentScanContainers ?? 1,
 				oidcEnabled: ($settingsStore || data.settings!).oidcEnabled,
 				oidcMergeAccounts: ($settingsStore || data.settings!).oidcMergeAccounts,
 				oidcSkipTlsVerify: ($settingsStore || data.settings!).oidcSkipTlsVerify,
@@ -125,17 +103,10 @@
 		})
 	);
 
-	// Override the default hasChanges since we need special handling for oidcClientSecret
-	const hasSecurityChanges = $derived(
+	const hasAuthenticationChanges = $derived(
 		$formInputs.authLocalEnabled.value !== currentSettings.authLocalEnabled ||
 			$formInputs.authSessionTimeout.value !== currentSettings.authSessionTimeout ||
 			$formInputs.authPasswordPolicy.value !== currentSettings.authPasswordPolicy ||
-			$formInputs.trivyImage.value !== currentSettings.trivyImage ||
-			$formInputs.trivyNetwork.value !== (currentSettings.trivyNetwork || 'bridge') ||
-			$formInputs.trivyResourceLimitsEnabled.value !== (currentSettings.trivyResourceLimitsEnabled ?? true) ||
-			$formInputs.trivyCpuLimit.value !== (currentSettings.trivyCpuLimit ?? 1) ||
-			$formInputs.trivyMemoryLimitMb.value !== (currentSettings.trivyMemoryLimitMb ?? 0) ||
-			$formInputs.trivyConcurrentScanContainers.value !== (currentSettings.trivyConcurrentScanContainers ?? 1) ||
 			$formInputs.oidcEnabled.value !== currentSettings.oidcEnabled ||
 			$formInputs.oidcMergeAccounts.value !== currentSettings.oidcMergeAccounts ||
 			$formInputs.oidcSkipTlsVerify.value !== currentSettings.oidcSkipTlsVerify ||
@@ -158,64 +129,6 @@
 		isOidcEnvForced ? currentSettings.oidcEnabled : $formInputs.oidcEnabled.value
 	);
 	const showOidcDetails = $derived($formInputs.oidcEnabled.value || isOidcForcedEnabled);
-	const baseTrivyNetworkOptions = [
-		{ value: 'bridge', label: 'bridge' },
-		{ value: 'host', label: 'host' },
-		{ value: 'none', label: 'none' }
-	];
-	let customTrivyNetworkOptions = $state<{ value: string; label: string; description?: string }[]>([]);
-
-	const trivyNetworkOptions = $derived.by(() => {
-		const options = new Map<string, { value: string; label: string; description?: string }>();
-		for (const option of baseTrivyNetworkOptions) {
-			options.set(option.value, option);
-		}
-		for (const option of customTrivyNetworkOptions) {
-			options.set(option.value, option);
-		}
-
-		const selectedNetwork = ($formInputs.trivyNetwork.value || '').trim();
-		if (selectedNetwork && !options.has(selectedNetwork)) {
-			options.set(selectedNetwork, {
-				value: selectedNetwork,
-				label: selectedNetwork,
-				description: m.security_trivy_network_current_value_note()
-			});
-		}
-
-		return [...options.values()];
-	});
-
-	async function loadTrivyNetworkOptions() {
-		try {
-			const response = await networkService.getNetworks({
-				pagination: {
-					page: 1,
-					limit: 1000
-				},
-				sort: {
-					column: 'name',
-					direction: 'asc'
-				}
-			});
-
-			const networkNames = [
-				...new Set(
-					response.data
-						.map((network) => network.name)
-						.filter((name) => !!name && !baseTrivyNetworkOptions.some((option) => option.value === name))
-				)
-			].sort((a, b) => a.localeCompare(b));
-
-			customTrivyNetworkOptions = networkNames.map((name) => ({
-				value: name,
-				label: name
-			}));
-		} catch (error) {
-			console.warn('Failed to load Trivy network options:', error);
-			toast.info(m.security_trivy_network_fetch_failed());
-		}
-	}
 
 	async function customSubmit() {
 		const formData = form.validate();
@@ -223,9 +136,6 @@
 			toast.error(m.security_form_validation_error());
 			return;
 		}
-
-		const trivyCpuLimit = formData.trivyResourceLimitsEnabled ? formData.trivyCpuLimit : 0;
-		const trivyMemoryLimitMb = formData.trivyResourceLimitsEnabled ? formData.trivyMemoryLimitMb : 0;
 
 		if (formData.oidcEnabled && !isOidcEnvForced) {
 			if (!formData.oidcClientId || !formData.oidcIssuerUrl) {
@@ -241,12 +151,6 @@
 				authLocalEnabled: formData.authLocalEnabled,
 				authSessionTimeout: formData.authSessionTimeout,
 				authPasswordPolicy: formData.authPasswordPolicy,
-				trivyImage: formData.trivyImage,
-				trivyNetwork: formData.trivyNetwork,
-				trivyResourceLimitsEnabled: formData.trivyResourceLimitsEnabled,
-				trivyCpuLimit,
-				trivyMemoryLimitMb,
-				trivyConcurrentScanContainers: formData.trivyConcurrentScanContainers,
 				oidcEnabled: formData.oidcEnabled,
 				oidcMergeAccounts: formData.oidcMergeAccounts,
 				oidcSkipTlsVerify: formData.oidcSkipTlsVerify,
@@ -300,14 +204,6 @@
 		}
 	}
 
-	function handleTrivyResourceLimitsChange(checked: boolean) {
-		$formInputs.trivyResourceLimitsEnabled.value = checked;
-		if (!checked) {
-			$formInputs.trivyCpuLimit.value = 0;
-			$formInputs.trivyMemoryLimitMb.value = 0;
-		}
-	}
-
 	function confirmMergeAccounts() {
 		$formInputs.oidcMergeAccounts.value = true;
 		showMergeAccountsAlert = false;
@@ -318,36 +214,28 @@
 		showMergeAccountsAlert = false;
 	}
 
-	onMount(() => {
-		void loadTrivyNetworkOptions();
-	});
-
 	$effect(() => {
-		// Use custom submit/reset for security page
 		settingsForm.registerFormActions(customSubmit, customReset);
-		// Sync the custom hasSecurityChanges to the context
 		const formState = getContext('settingsFormState') as any;
 		if (formState) {
-			formState.hasChanges = hasSecurityChanges;
+			formState.hasChanges = hasAuthenticationChanges;
 		}
 	});
 </script>
 
 <SettingsPageLayout
-	title={m.security_title()}
-	description={m.security_description()}
+	title={m.authentication_title()}
+	description={m.authentication_description()}
 	icon={LockIcon}
 	pageType="form"
 	showReadOnlyTag={isReadOnly}
 >
 	{#snippet mainContent()}
 		<fieldset disabled={isReadOnly} class="relative space-y-8">
-			<!-- Authentication Section -->
 			<div class="space-y-4">
 				<h3 class="text-lg font-medium">{m.security_authentication_heading()}</h3>
 
 				{#if isAutoLoginEnabled}
-					<!-- Auto-Login Enabled Alert -->
 					<Alert.Root variant="default" class="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
 						<InfoIcon class="h-4 w-4 text-amber-600 dark:text-amber-500" />
 						<Alert.Title class="text-amber-900 dark:text-amber-100">{m.security_auto_login_enabled_title()}</Alert.Title>
@@ -356,10 +244,8 @@
 						</Alert.Description>
 					</Alert.Root>
 				{:else}
-					<!-- Authentication Cards (only shown when auto-login is disabled) -->
 					<div class="bg-card rounded-lg border shadow-sm">
 						<div class="space-y-6 p-6">
-							<!-- Local Auth -->
 							<div class="grid gap-4 md:grid-cols-[1fr_1.5fr] md:gap-8">
 								<div>
 									<Label class="text-base">{m.security_local_auth_label()}</Label>
@@ -379,7 +265,6 @@
 
 							<Separator />
 
-							<!-- OIDC Auth -->
 							<div class="grid gap-4 md:grid-cols-[1fr_1.5fr] md:gap-8">
 								<div>
 									<Label class="text-base">{m.security_oidc_auth_label()}</Label>
@@ -629,7 +514,6 @@
 				{/if}
 			</div>
 
-			<!-- Session Section -->
 			<div class="space-y-4">
 				<h3 class="text-lg font-medium">{m.security_session_heading()}</h3>
 				<div class="bg-card rounded-lg border shadow-sm">
@@ -640,21 +524,21 @@
 								<p class="text-muted-foreground mt-1 text-sm">{m.security_session_timeout_description()}</p>
 							</div>
 							<div class="max-w-xs">
-								<TextInputWithLabel
-									bind:value={$formInputs.authSessionTimeout.value}
-									error={$formInputs.authSessionTimeout.error}
-									label={m.security_session_timeout_label()}
-									placeholder={m.security_session_timeout_placeholder()}
-									helpText={m.security_session_timeout_description()}
+								<Input
+									id="authSessionTimeout"
 									type="number"
+									bind:value={$formInputs.authSessionTimeout.value}
+									aria-label={m.security_session_timeout_label()}
 								/>
+								{#if $formInputs.authSessionTimeout.error}
+									<p class="text-destructive mt-2 text-sm">{$formInputs.authSessionTimeout.error}</p>
+								{/if}
 							</div>
 						</div>
 					</div>
 				</div>
 			</div>
 
-			<!-- Password Policy Section -->
 			<div class="space-y-4">
 				<h3 class="text-lg font-medium">{m.security_password_policy_label()}</h3>
 				<div class="bg-card rounded-lg border shadow-sm">
@@ -710,102 +594,6 @@
 											{m.security_password_policy_strong_tooltip()}
 										</ArcaneTooltip.Content>
 									</ArcaneTooltip.Root>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- Vulnerability Scanning Section -->
-			<div class="space-y-4">
-				<h3 class="text-lg font-medium">{m.security_vulnerability_scanning_heading()}</h3>
-				<div class="bg-card rounded-lg border shadow-sm">
-					<div class="space-y-6 p-6">
-						<div class="grid gap-4 md:grid-cols-[1fr_1.5fr] md:gap-8">
-							<div>
-								<Label class="text-base">{m.security_trivy_image_label()}</Label>
-								<p class="text-muted-foreground mt-1 text-sm">{m.security_trivy_image_description()}</p>
-								<p class="text-muted-foreground mt-2 text-xs">{m.security_trivy_image_note()}</p>
-							</div>
-							<div class="max-w-xs">
-								<TextInputWithLabel
-									bind:value={$formInputs.trivyImage.value}
-									error={$formInputs.trivyImage.error}
-									label={m.security_trivy_image_label()}
-									placeholder="ghcr.io/aquasecurity/trivy:latest"
-									type="text"
-								/>
-							</div>
-						</div>
-
-						<div class="grid gap-4 md:grid-cols-[1fr_1.5fr] md:gap-8">
-							<div>
-								<Label class="text-base">{m.security_trivy_network_label()}</Label>
-								<p class="text-muted-foreground mt-1 text-sm">{m.security_trivy_network_description()}</p>
-								<p class="text-muted-foreground mt-2 text-xs">{m.security_trivy_network_help()}</p>
-							</div>
-							<div class="max-w-xs">
-								<SearchableSelect
-									triggerId="trivyNetwork"
-									items={trivyNetworkOptions.map((option) => ({
-										value: option.value,
-										label: option.label,
-										hint: option.description
-									}))}
-									bind:value={$formInputs.trivyNetwork.value}
-									onSelect={(value) => ($formInputs.trivyNetwork.value = value)}
-									class="w-full justify-between"
-								/>
-								{#if $formInputs.trivyNetwork.error}
-									<p class="text-destructive mt-2 text-sm">{$formInputs.trivyNetwork.error}</p>
-								{/if}
-							</div>
-						</div>
-
-						<div class="grid gap-4 md:grid-cols-[1fr_1.5fr] md:gap-8">
-							<div>
-								<Label class="text-base">{m.security_trivy_resource_limits_label()}</Label>
-								<p class="text-muted-foreground mt-1 text-sm">{m.security_trivy_resource_limits_description()}</p>
-								<p class="text-muted-foreground mt-2 text-xs">{m.security_trivy_resource_limits_note()}</p>
-							</div>
-							<div class="space-y-4">
-								<div class="flex items-center gap-2">
-									<Switch
-										id="trivyResourceLimitsEnabledSwitch"
-										bind:checked={$formInputs.trivyResourceLimitsEnabled.value}
-										onCheckedChange={handleTrivyResourceLimitsChange}
-									/>
-									<Label for="trivyResourceLimitsEnabledSwitch" class="font-normal">
-										{$formInputs.trivyResourceLimitsEnabled.value ? m.common_enabled() : m.common_disabled()}
-									</Label>
-								</div>
-								<div class="grid gap-4 sm:grid-cols-2">
-									<TextInputWithLabel
-										bind:value={$formInputs.trivyCpuLimit.value}
-										error={$formInputs.trivyCpuLimit.error}
-										disabled={!$formInputs.trivyResourceLimitsEnabled.value}
-										label={m.security_trivy_cpu_limit_label()}
-										helpText={m.security_trivy_cpu_limit_help()}
-										type="number"
-									/>
-									<TextInputWithLabel
-										bind:value={$formInputs.trivyMemoryLimitMb.value}
-										error={$formInputs.trivyMemoryLimitMb.error}
-										disabled={!$formInputs.trivyResourceLimitsEnabled.value}
-										label={m.security_trivy_memory_limit_label()}
-										reserveHelpTextSpace={true}
-										type="number"
-									/>
-								</div>
-								<div class="max-w-xs pt-2">
-									<TextInputWithLabel
-										bind:value={$formInputs.trivyConcurrentScanContainers.value}
-										error={$formInputs.trivyConcurrentScanContainers.error}
-										label={m.security_trivy_concurrent_scan_containers_label()}
-										helpText={m.security_trivy_concurrent_scan_containers_help()}
-										type="number"
-									/>
 								</div>
 							</div>
 						</div>

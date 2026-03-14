@@ -40,6 +40,9 @@ export type Settings = {
 	authPasswordPolicy: 'basic' | 'standard' | 'strong';
 	trivyImage: string;
 	trivyNetwork: string;
+	trivySecurityOpts: string;
+	trivyPrivileged: boolean;
+	trivyPreserveCacheOnVolumePrune: boolean;
 	trivyResourceLimitsEnabled: boolean;
 	trivyCpuLimit: number;
 	trivyMemoryLimitMb: number;
