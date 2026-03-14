@@ -233,17 +233,24 @@
 	// Find which file (root compose or an include file) directly defines this service.
 	// Returns { includeFile: null } for root compose, { includeFile: <file> } for a sub-file,
 	// or null if the service isn't found anywhere (hides the tab).
+	// Cache keyed by "serviceName|content" to avoid re-parsing YAML when only object references change.
+	const _yamlServiceCache = new Map<string, boolean>();
 	const serviceComposeSource = $derived(
 		(() => {
 			if (!project || !composeServiceName || !composeInfo) return null;
 
 			const hasService = (content: string): boolean => {
+				const cacheKey = `${composeServiceName}|${content}`;
+				if (_yamlServiceCache.has(cacheKey)) return _yamlServiceCache.get(cacheKey)!;
+				let result = false;
 				try {
 					const parsed = parseYaml(content) as Record<string, unknown> | null;
-					return !!(parsed?.services && (parsed.services as Record<string, unknown>)[composeServiceName]);
+					result = !!(parsed?.services && (parsed.services as Record<string, unknown>)[composeServiceName]);
 				} catch {
-					return false;
+					// result stays false
 				}
+				_yamlServiceCache.set(cacheKey, result);
+				return result;
 			};
 
 			if (project.composeContent && hasService(project.composeContent)) {

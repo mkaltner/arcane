@@ -94,7 +94,7 @@
 			language="yaml"
 			bind:value={composeContent}
 			readOnly={isReadOnly}
-			fileId="container-compose-{project.id}{includeFile ? `-${includeFile.relativePath}` : ''}"
+			fileId="container-compose-{project.id}{includeFile ? `-${includeFile.relativePath.replace(/[^a-zA-Z0-9_-]/g, '-')}` : ''}"
 		/>
 	</div>
 
