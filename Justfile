@@ -853,13 +853,19 @@ _test-backend:
 _test-cli:
     cd cli && go test ./... -race -coverprofile=coverage.txt -covermode=atomic -v
 
+# Run shared types Go tests
+[group('tests')]
+_test-types:
+    cd types && go test ./... -race -coverprofile=coverage.txt -covermode=atomic -v
+
 [group('tests')]
 _test-all:
     @just _test-e2e
     @just _test-backend
     @just _test-cli
+    @just _test-types
 
-# Run tests. Valid targets: "e2e", "backend", "cli", "all".
+# Run tests. Valid targets: "e2e", "backend", "cli", "types", "all".
 [group('tests')]
 test target="all":
     @just "_test-{{ target }}"
@@ -1025,10 +1031,15 @@ _gomod-sync-all:
 gomod action="tidy" target="all":
     @just "_gomod-{{ action }}-{{ target }}"
 
-# Format frontend (Prettier) and Go modules (gofmt)
+# Format frontend (Prettier), test/email TypeScript (oxfmt), and Go modules (gofmt)
 [group('format')]
 _format-frontend:
     pnpm -C frontend format
+
+[group('format')]
+_format-js:
+    pnpm -C tests exec oxfmt "**/*.{ts,tsx,js,jsx,mts,cts}"
+    pnpm -C email-templates exec oxfmt "**/*.{ts,tsx,js,jsx,mts,cts}"
 
 [group('format')]
 _format-go:
@@ -1045,6 +1056,11 @@ _format-check-frontend:
     pnpm -C frontend format:check
 
 [group('format')]
+_format-check-js:
+    pnpm -C tests exec oxfmt --check "**/*.{ts,tsx,js,jsx,mts,cts}"
+    pnpm -C email-templates exec oxfmt --check "**/*.{ts,tsx,js,jsx,mts,cts}"
+
+[group('format')]
 _format-check-go:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -1059,15 +1075,17 @@ _format-check-go:
 [group('format')]
 _format-all:
     @just _format-frontend
+    @just _format-js
     @just _format-go
     @just _format-just
 
 [group('format')]
 _format-check-all:
     @just _format-check-frontend
+    @just _format-check-js
     @just _format-check-go
 
-# Format targets. Valid: "frontend", "go", "just", "all". Use --check to verify formatting.
+# Format targets. Valid: "frontend", "js", "go", "just", "all". Use --check to verify formatting.
 [group('format')]
 format target="all" check="":
     @if [ "{{ check }}" = "--check" ]; then just "_format-check-{{ target }}"; else just "_format-{{ target }}"; fi
