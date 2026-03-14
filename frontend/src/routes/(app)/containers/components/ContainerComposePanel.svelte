@@ -8,6 +8,7 @@
 	import { AlertIcon, ExternalLinkIcon } from '$lib/icons';
 	import * as m from '$lib/paraglide/messages';
 	import { invalidateAll } from '$app/navigation';
+	import { untrack } from 'svelte';
 
 	let {
 		project,
@@ -34,14 +35,21 @@
 	const isDirty = $derived(composeContent !== sourceContent);
 
 	$effect(() => {
-		const identityChanged = fileIdentity !== prevFileIdentity;
-		const sourceChanged = sourceContent !== prevSourceContent;
+		// Capture reactive dependencies explicitly outside untrack
+		const currentFileIdentity = fileIdentity;
+		const currentSourceContent = sourceContent;
 
-		if (identityChanged || (sourceChanged && !isDirty)) {
-			composeContent = sourceContent;
-			prevSourceContent = sourceContent;
-			prevFileIdentity = fileIdentity;
-		}
+		// Mutations inside untrack() to avoid re-triggering this effect
+		untrack(() => {
+			const identityChanged = currentFileIdentity !== prevFileIdentity;
+			const sourceChanged = currentSourceContent !== prevSourceContent;
+
+			if (identityChanged || (sourceChanged && !isDirty)) {
+				composeContent = currentSourceContent;
+				prevSourceContent = currentSourceContent;
+				prevFileIdentity = currentFileIdentity;
+			}
+		});
 	});
 
 	let panelOpen = $state(true);
@@ -81,7 +89,7 @@
 
 	<div class="bg-muted flex items-start gap-2 rounded-lg border px-4 py-3 text-sm">
 		<span>
-			{@html isReadOnly
+			{isReadOnly
 				? m.container_compose_viewing_info({ file: fileTitle, project: project.name, service: serviceName })
 				: m.container_compose_editing_info({ file: fileTitle, project: project.name, service: serviceName })}
 		</span>
