@@ -21,11 +21,12 @@
 	const sourceContent = $derived(includeFile ? includeFile.content : (project.composeContent ?? ''));
 
 	let composeContent = $state(sourceContent);
-	let isDirty = $state(false);
 
 	// Update composeContent when source changes (e.g., switching containers)
 	// Only if there are no unsaved edits
 	let prevSourceContent = $state(sourceContent);
+	const isDirty = $derived(composeContent !== sourceContent);
+	
 	$effect(() => {
 		if (sourceContent !== prevSourceContent && !isDirty) {
 			composeContent = sourceContent;
@@ -33,10 +34,14 @@
 		}
 	});
 
-	// Track dirty state when content changes
-	$effect(() => {
-		isDirty = composeContent !== sourceContent;
-	});
+	function escapeHtml(str: string): string {
+		return str
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#039;');
+	}
 
 	let panelOpen = $state(true);
 	let isSaving = $state(false);
@@ -53,7 +58,6 @@
 				await projectService.updateProject(project.id, undefined, composeContent);
 			}
 			toast.success(m.container_compose_save_success());
-			isDirty = false;
 		} catch (err: any) {
 			toast.error(err?.message ?? m.container_compose_save_failed());
 		} finally {
@@ -68,7 +72,7 @@
 			<AlertIcon class="size-4" />
 			<Alert.Title>{m.container_compose_gitops_managed_title()}</Alert.Title>
 			<Alert.Description>
-				{@html m.container_compose_gitops_managed_description({ provider: `<strong>${project.gitOpsManagedBy}</strong>` })}
+				{@html m.container_compose_gitops_managed_description({ provider: `<strong>${escapeHtml(project.gitOpsManagedBy)}</strong>` })}
 			</Alert.Description>
 		</Alert.Root>
 	{/if}
@@ -77,14 +81,14 @@
 		<span>
 			{@html isReadOnly
 				? m.container_compose_viewing_info({
-						file: `<strong>${fileTitle}</strong>`,
-						project: `<a href="/projects/${project.id}" class="text-primary font-medium hover:underline">${project.name}</a>`,
-						service: `<strong>${serviceName}</strong>`
+						file: `<strong>${escapeHtml(fileTitle)}</strong>`,
+						project: `<a href="/projects/${project.id}" class="text-primary font-medium hover:underline">${escapeHtml(project.name)}</a>`,
+						service: `<strong>${escapeHtml(serviceName)}</strong>`
 					})
 				: m.container_compose_editing_info({
-						file: `<strong>${fileTitle}</strong>`,
-						project: `<a href="/projects/${project.id}" class="text-primary font-medium hover:underline">${project.name}</a>`,
-						service: `<strong>${serviceName}</strong>`
+						file: `<strong>${escapeHtml(fileTitle)}</strong>`,
+						project: `<a href="/projects/${project.id}" class="text-primary font-medium hover:underline">${escapeHtml(project.name)}</a>`,
+						service: `<strong>${escapeHtml(serviceName)}</strong>`
 					})}
 		</span>
 	</div>
