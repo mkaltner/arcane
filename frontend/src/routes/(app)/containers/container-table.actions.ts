@@ -191,7 +191,7 @@ export function createContainerActions({
 			title: m.container_confirm_redeploy_title(),
 			message: m.container_confirm_redeploy_message(),
 			confirm: {
-				label: m.compose_pull_redeploy(),
+				label: m.common_redeploy(),
 				destructive: false,
 				action: async () => {
 					actionStatus[container.id] = 'redeploying';

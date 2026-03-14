@@ -418,7 +418,7 @@
 							result,
 							message: m.common_action_failed_with_type({ action: m.common_redeploy(), type }),
 							onSuccess: async (data) => {
-								toast.success(m.common_redeploy_success({ type: name || type }));
+								toast.success(type === 'container' ? m.container_redeploy_success() : m.common_redeploy_success({ type: name || type }));
 								const containerData = data as ContainerRedeployResponse;
 								if (type === 'container' && containerData?.data?.containerId) {
 									goto(`/containers/${containerData.data.containerId}`);
