@@ -263,7 +263,7 @@ func (s *ContainerService) RedeployContainer(ctx context.Context, containerID st
 		newConfig.Hostname = ""
 	}
 
-	createResp, err := dockerClient.ContainerCreate(ctx, client.ContainerCreateOptions{
+	createResp, err := libarcane.ContainerCreateWithCompatibility(ctx, dockerClient, client.ContainerCreateOptions{
 		Config:           &newConfig,
 		HostConfig:       containerInfo.HostConfig,
 		NetworkingConfig: networkingConfig,
