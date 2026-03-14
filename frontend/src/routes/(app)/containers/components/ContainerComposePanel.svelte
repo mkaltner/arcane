@@ -7,6 +7,7 @@
 	import type { Project, IncludeFile } from '$lib/types/project.type';
 	import { AlertIcon, ExternalLinkIcon } from '$lib/icons';
 	import * as m from '$lib/paraglide/messages';
+	import { invalidateAll } from '$app/navigation';
 
 	let {
 		project,
@@ -48,6 +49,7 @@
 			} else {
 				await projectService.updateProject(project.id, undefined, composeContent);
 			}
+			await invalidateAll();
 			toast.success(m.container_compose_save_success());
 		} catch (err: any) {
 			toast.error(err?.message ?? m.container_compose_save_failed());
@@ -63,16 +65,16 @@
 			<AlertIcon class="size-4" />
 			<Alert.Title>{m.container_compose_gitops_managed_title()}</Alert.Title>
 			<Alert.Description>
-				This project is managed by GitOps (<strong>{project.gitOpsManagedBy}</strong>). The compose file is read-only and can only be changed via your Git repository.
+				{m.container_compose_gitops_managed_description({ provider: project.gitOpsManagedBy })}
 			</Alert.Description>
 		</Alert.Root>
 	{/if}
 
 	<div class="bg-muted flex items-start gap-2 rounded-lg border px-4 py-3 text-sm">
 		<span>
-			{isReadOnly ? 'Viewing' : 'Editing'} <strong>{fileTitle}</strong> for project
-			<a href="/projects/{project.id}" class="text-primary font-medium hover:underline">{project.name}</a>.
-			This container runs as the <strong>{serviceName}</strong> service.
+			{@html isReadOnly
+				? m.container_compose_viewing_info({ file: fileTitle, project: project.name, service: serviceName })
+				: m.container_compose_editing_info({ file: fileTitle, project: project.name, service: serviceName })}
 		</span>
 	</div>
 
