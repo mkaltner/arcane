@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/getarcaneapp/arcane/backend/internal/utils/arcaneupdater"
-	"github.com/getarcaneapp/arcane/backend/internal/utils/docker"
+	docker "github.com/getarcaneapp/arcane/backend/pkg/dockerutil"
 	"github.com/getarcaneapp/arcane/backend/pkg/libarcane"
+	libupdater "github.com/getarcaneapp/arcane/backend/pkg/libarcane/updater"
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/network"
 	"github.com/moby/moby/client"
@@ -53,7 +53,7 @@ func runUpgrade(cmd *cobra.Command, args []string) error {
 	// This prevents interruption when stopping the target container
 	ctx := context.Background()
 
-	logFile, err := arcaneupdater.SetupMessageOnlyLogFile("/app/data", "arcane-upgrade", slog.LevelInfo)
+	logFile, err := libupdater.SetupMessageOnlyLogFile("/app/data", "arcane-upgrade", slog.LevelInfo)
 	if err != nil {
 		slog.Warn("Failed to setup file logging", "error", err)
 	} else if logFile != nil {
@@ -151,7 +151,7 @@ func findArcaneContainer(ctx context.Context, dockerClient *client.Client) (cont
 		}
 
 		// New label: com.getarcaneapp.arcane=true
-		if arcaneupdater.IsArcaneContainer(labels) {
+		if libupdater.IsArcaneContainer(labels) {
 			slog.Info("Found Arcane container by label", "id", c.ID[:12], "image", c.Image, "names", c.Names)
 			return inspect, nil
 		}
@@ -383,9 +383,12 @@ func upgradeContainer(ctx context.Context, dockerClient *client.Client, oldConta
 	}
 
 	// Build network config - preserve all network settings including IP addresses
-	var networkConfig *network.NetworkingConfig
+	var (
+		apiVersion    string
+		networkConfig *network.NetworkingConfig
+	)
 	if !nm.IsContainer() {
-		apiVersion := libarcane.DetectDockerAPIVersion(ctx, dockerClient)
+		apiVersion = libarcane.DetectDockerAPIVersion(ctx, dockerClient)
 		if apiVersion != "" && !libarcane.SupportsDockerCreatePerNetworkMACAddress(apiVersion) {
 			slog.Info("daemon API does not support per-network mac-address on create; stripping endpoint mac addresses",
 				"dockerAPIVersion", apiVersion,
@@ -419,12 +422,12 @@ func upgradeContainer(ctx context.Context, dockerClient *client.Client, oldConta
 
 	fmt.Println("PROGRESS:75:Creating new container")
 	slog.Info("Creating new container", "name", originalName)
-	resp, err := dockerClient.ContainerCreate(ctx, client.ContainerCreateOptions{
+	resp, err := libarcane.ContainerCreateWithCompatibilityForAPIVersion(ctx, dockerClient, client.ContainerCreateOptions{
 		Config:           &config,
 		HostConfig:       hostConfig,
 		NetworkingConfig: networkConfig,
 		Name:             originalName,
-	})
+	}, apiVersion)
 	if err != nil {
 		// Try to restart and restore old container on failure
 		_, _ = dockerClient.ContainerStart(ctx, oldContainer.ID, client.ContainerStartOptions{})

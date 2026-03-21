@@ -22,6 +22,7 @@
 	import DockerTab from './components/DockerTab.svelte';
 	import JobsTab from './components/JobsTab.svelte';
 	import AgentTab from './components/AgentTab.svelte';
+	import TrivySecuritySettings from '$lib/components/settings/trivy-security-settings.svelte';
 	import {
 		ArrowLeftIcon,
 		EnvironmentsIcon,
@@ -29,6 +30,7 @@
 		RefreshIcon,
 		ApiKeyIcon,
 		DockerBrandIcon,
+		SecurityIcon,
 		SettingsIcon,
 		GitBranchIcon,
 		JobsIcon
@@ -62,6 +64,11 @@
 				value: 'docker',
 				label: m.environments_docker_settings_title(),
 				icon: DockerBrandIcon
+			},
+			{
+				value: 'security',
+				label: m.security_title(),
+				icon: SecurityIcon
 			},
 			{
 				value: 'jobs',
@@ -142,6 +149,7 @@
 		pollingEnabled: z.boolean(),
 		autoUpdate: z.boolean(),
 		autoInjectEnv: z.boolean(),
+		followProjectSymlinks: z.boolean(),
 		dockerPruneMode: z.enum(['all', 'dangling']),
 		defaultDeployPullPolicy: z.enum(['missing', 'always', 'never']),
 		defaultShell: z.string(),
@@ -156,6 +164,15 @@
 		scheduledPruneNetworks: z.boolean(),
 		scheduledPruneBuildCache: z.boolean(),
 		vulnerabilityScanEnabled: z.boolean(),
+		trivyImage: z.string(),
+		trivyNetwork: z.string(),
+		trivySecurityOpts: z.string(),
+		trivyPrivileged: z.boolean(),
+		trivyPreserveCacheOnVolumePrune: z.boolean(),
+		trivyResourceLimitsEnabled: z.boolean(),
+		trivyCpuLimit: z.coerce.number().int(m.security_session_timeout_integer()).nonnegative(),
+		trivyMemoryLimitMb: z.coerce.number().int().nonnegative(),
+		trivyConcurrentScanContainers: z.coerce.number().int().min(1, m.security_trivy_concurrent_scan_containers_min()),
 		autoUpdateExcludedContainers: z.string(),
 		autoHealEnabled: z.boolean(),
 		autoHealExcludedContainers: z.string(),
@@ -171,6 +188,7 @@
 		pollingEnabled: settings?.pollingEnabled ?? false,
 		autoUpdate: settings?.autoUpdate ?? false,
 		autoInjectEnv: settings?.autoInjectEnv ?? false,
+		followProjectSymlinks: settings?.followProjectSymlinks ?? false,
 		dockerPruneMode: (settings?.dockerPruneMode as 'all' | 'dangling') || 'dangling',
 		defaultDeployPullPolicy: (settings?.defaultDeployPullPolicy as 'missing' | 'always' | 'never') || 'missing',
 		defaultShell: settings?.defaultShell || '/bin/sh',
@@ -185,6 +203,15 @@
 		scheduledPruneNetworks: settings?.scheduledPruneNetworks ?? true,
 		scheduledPruneBuildCache: settings?.scheduledPruneBuildCache ?? false,
 		vulnerabilityScanEnabled: settings?.vulnerabilityScanEnabled ?? false,
+		trivyImage: settings?.trivyImage || '',
+		trivyNetwork: settings?.trivyNetwork || '',
+		trivySecurityOpts: settings?.trivySecurityOpts || '',
+		trivyPrivileged: settings?.trivyPrivileged ?? false,
+		trivyPreserveCacheOnVolumePrune: settings?.trivyPreserveCacheOnVolumePrune ?? true,
+		trivyResourceLimitsEnabled: settings?.trivyResourceLimitsEnabled ?? true,
+		trivyCpuLimit: settings?.trivyCpuLimit ?? 1,
+		trivyMemoryLimitMb: settings?.trivyMemoryLimitMb ?? 0,
+		trivyConcurrentScanContainers: settings?.trivyConcurrentScanContainers ?? 1,
 		autoUpdateExcludedContainers: settings?.autoUpdateExcludedContainers || '',
 		autoHealEnabled: settings?.autoHealEnabled ?? false,
 		autoHealExcludedContainers: settings?.autoHealExcludedContainers || '',
@@ -207,6 +234,7 @@
 				pollingEnabled: formData.pollingEnabled,
 				autoUpdate: formData.autoUpdate,
 				autoInjectEnv: formData.autoInjectEnv,
+				followProjectSymlinks: formData.followProjectSymlinks,
 				dockerPruneMode: formData.dockerPruneMode,
 				defaultDeployPullPolicy: formData.defaultDeployPullPolicy,
 				defaultShell: formData.defaultShell,
@@ -221,6 +249,15 @@
 				scheduledPruneNetworks: formData.scheduledPruneNetworks,
 				scheduledPruneBuildCache: formData.scheduledPruneBuildCache,
 				vulnerabilityScanEnabled: formData.vulnerabilityScanEnabled,
+				trivyImage: formData.trivyImage,
+				trivyNetwork: formData.trivyNetwork,
+				trivySecurityOpts: formData.trivySecurityOpts,
+				trivyPrivileged: formData.trivyPrivileged,
+				trivyPreserveCacheOnVolumePrune: formData.trivyPreserveCacheOnVolumePrune,
+				trivyResourceLimitsEnabled: formData.trivyResourceLimitsEnabled,
+				trivyCpuLimit: formData.trivyResourceLimitsEnabled ? formData.trivyCpuLimit : 0,
+				trivyMemoryLimitMb: formData.trivyResourceLimitsEnabled ? formData.trivyMemoryLimitMb : 0,
+				trivyConcurrentScanContainers: formData.trivyConcurrentScanContainers,
 				autoUpdateExcludedContainers: formData.autoUpdateExcludedContainers,
 				autoHealEnabled: formData.autoHealEnabled,
 				autoHealExcludedContainers: formData.autoHealExcludedContainers,
@@ -540,6 +577,10 @@
 					{pruneModeDescription}
 					{pruneModeOptions}
 				/>
+			</Tabs.Content>
+
+			<Tabs.Content value="security">
+				<TrivySecuritySettings {formInputs} environmentId={environment.id} />
 			</Tabs.Content>
 
 			<Tabs.Content value="jobs">

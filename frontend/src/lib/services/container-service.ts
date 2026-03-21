@@ -3,29 +3,44 @@ import { environmentStore } from '$lib/stores/environment.store.svelte';
 import type {
 	ContainerStatusCounts,
 	ContainerSummaryDto,
+	ContainerSummaryGroupDto,
 	ContainerStats,
-	ContainerCreateRequest
+	ContainerCreateRequest,
+	ContainerDetailsDto
 } from '$lib/types/container.type';
 import type { SearchPaginationSortRequest, Paginated } from '$lib/types/pagination.type';
 import { transformPaginationParams } from '$lib/utils/params.util';
 
-export type ContainersPaginatedResponse = Paginated<ContainerSummaryDto, ContainerStatusCounts>;
+export type ContainersPaginatedResponse = Paginated<ContainerSummaryDto, ContainerStatusCounts> & {
+	groups?: ContainerSummaryGroupDto[];
+};
+export type ContainerListRequestOptions = SearchPaginationSortRequest & {
+	groupByProject?: boolean;
+};
+
+export interface ContainerDetailsResponse {
+	success: boolean;
+	data: ContainerDetailsDto;
+}
 
 export class ContainerService extends BaseAPIService {
 	private async resolveEnvironmentId(environmentId?: string): Promise<string> {
 		return environmentId ?? (await environmentStore.getCurrentEnvironmentId());
 	}
 
-	async getContainers(options?: SearchPaginationSortRequest): Promise<ContainersPaginatedResponse> {
+	async getContainers(options?: ContainerListRequestOptions): Promise<ContainersPaginatedResponse> {
 		const envId = await this.resolveEnvironmentId();
 		return this.getContainersForEnvironment(envId, options);
 	}
 
 	async getContainersForEnvironment(
 		environmentId: string,
-		options?: SearchPaginationSortRequest
+		options?: ContainerListRequestOptions
 	): Promise<ContainersPaginatedResponse> {
 		const params = transformPaginationParams(options);
+		if (options?.groupByProject) {
+			params.groupBy = 'project';
+		}
 		const res = await this.api.get(`/environments/${environmentId}/containers`, { params });
 		return res.data;
 	}
@@ -81,6 +96,11 @@ export class ContainerService extends BaseAPIService {
 	async updateContainer(containerId: string): Promise<any> {
 		const envId = await environmentStore.getCurrentEnvironmentId();
 		return this.handleResponse(this.api.post(`/environments/${envId}/containers/${containerId}/update`));
+	}
+
+	async redeployContainer(containerId: string): Promise<ContainerDetailsResponse> {
+		const envId = await environmentStore.getCurrentEnvironmentId();
+		return this.handleResponse(this.api.post(`/environments/${envId}/containers/${containerId}/redeploy`));
 	}
 }
 

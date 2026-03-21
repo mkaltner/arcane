@@ -37,6 +37,11 @@ type Update struct {
 	// Required: false
 	ProjectsDirectory *string `json:"projectsDirectory,omitempty"`
 
+	// FollowProjectSymlinks controls whether symlinked child directories in the projects directory are discovered as projects.
+	//
+	// Required: false
+	FollowProjectSymlinks *string `json:"followProjectSymlinks,omitempty"`
+
 	// DiskUsagePath is the path to monitor for disk usage.
 	//
 	// Required: false
@@ -157,6 +162,11 @@ type Update struct {
 	// Required: false
 	AccentColor *string `json:"accentColor,omitempty"`
 
+	// ApplicationTheme is the overall application theme preset.
+	//
+	// Required: false
+	ApplicationTheme *string `json:"applicationTheme,omitempty"`
+
 	// AuthLocalEnabled indicates if local authentication is enabled.
 	//
 	// Required: false
@@ -188,10 +198,26 @@ type Update struct {
 	TrivyImage *string `json:"trivyImage,omitempty"`
 
 	// TrivyNetwork sets the Docker network mode/network name for Trivy scan containers.
-	// Defaults to "bridge".
+	// Leave empty to inherit Arcane's network automatically, with bridge as the final fallback.
 	//
 	// Required: false
 	TrivyNetwork *string `json:"trivyNetwork,omitempty"`
+
+	// TrivySecurityOpts applies Docker security options to Trivy scan containers.
+	// Accepts comma-separated or newline-separated values.
+	//
+	// Required: false
+	TrivySecurityOpts *string `json:"trivySecurityOpts,omitempty"`
+
+	// TrivyPrivileged controls whether Trivy scan containers run in privileged mode.
+	//
+	// Required: false
+	TrivyPrivileged *string `json:"trivyPrivileged,omitempty"`
+
+	// TrivyPreserveCacheOnVolumePrune controls whether the Trivy cache volume is excluded from manual and scheduled volume prune runs.
+	//
+	// Required: false
+	TrivyPreserveCacheOnVolumePrune *string `json:"trivyPreserveCacheOnVolumePrune,omitempty"`
 
 	// TrivyResourceLimitsEnabled controls whether CPU and memory limits are applied to Trivy scan containers.
 	//
