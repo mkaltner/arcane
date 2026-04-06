@@ -246,13 +246,16 @@ func deployPhaseFromSummary(cs api.ContainerSummary) string {
 }
 
 func ComposePs(ctx context.Context, proj *types.Project, services []string, all bool) ([]api.ContainerSummary, error) {
-	c, err := NewClient(ctx)
+	psCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	c, err := NewClient(psCtx)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = c.Close() }()
 
-	return c.svc.Ps(ctx, proj.Name, api.PsOptions{All: all})
+	return c.svc.Ps(psCtx, proj.Name, api.PsOptions{All: all})
 }
 
 func ComposeDown(ctx context.Context, proj *types.Project, removeVolumes bool) error {
@@ -279,7 +282,10 @@ func ComposeLogs(ctx context.Context, projectName string, out io.Writer, follow 
 }
 
 func ListGlobalComposeContainers(ctx context.Context) ([]container.Summary, error) {
-	c, err := NewClient(ctx)
+	listCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	c, err := NewClient(listCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -289,7 +295,7 @@ func ListGlobalComposeContainers(ctx context.Context) ([]container.Summary, erro
 	filter := make(client.Filters)
 	filter = filter.Add("label", "com.docker.compose.project")
 
-	listResult, err := cli.ContainerList(ctx, client.ContainerListOptions{
+	listResult, err := cli.ContainerList(listCtx, client.ContainerListOptions{
 		All:     true,
 		Filters: filter,
 	})

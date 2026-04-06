@@ -3106,15 +3106,15 @@ func (s *ProjectService) mapProjectToDto(ctx context.Context, projectsDir string
 		}(context.WithoutCancel(ctx), p.ID, resp.ServiceCount)
 	}
 
-	// Fix for missing service count (e.g. newly discovered projects)
-	if resp.ServiceCount == 0 {
-		if count, err := s.countServicesFromCompose(ctx, p); err == nil && count > 0 {
-			resp.ServiceCount = count
-			// Update DB asynchronously
-			go func(ctx context.Context, pid string, c int) {
-				s.db.WithContext(ctx).Model(&models.Project{}).Where("id = ?", pid).Update("service_count", c)
-			}(context.WithoutCancel(ctx), p.ID, count)
-		}
+	// Fix for missing service count (e.g. newly discovered projects).
+	// Skip the expensive compose parse in list view — the count will be
+	// populated the next time the project detail endpoint is called or
+	// during the periodic filesystem sync.
+	if resp.ServiceCount == 0 && len(services) > 0 {
+		resp.ServiceCount = len(services)
+		go func(ctx context.Context, pid string, c int) {
+			s.db.WithContext(ctx).Model(&models.Project{}).Where("id = ?", pid).Update("service_count", c)
+		}(context.WithoutCancel(ctx), p.ID, len(services))
 	}
 
 	// Calculate Status using actual container count from Docker rather than the

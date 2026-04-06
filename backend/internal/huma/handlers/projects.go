@@ -352,6 +352,9 @@ func (h *ProjectHandler) ListProjects(ctx context.Context, input *ListProjectsIn
 		return nil, huma.Error500InternalServerError("service not available")
 	}
 
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
 	params := pagination.QueryParams{
 		SearchQuery: pagination.SearchQuery{
 			Search: input.Search,
@@ -531,6 +534,9 @@ func (h *ProjectHandler) GetProject(ctx context.Context, input *GetProjectInput)
 	if h.projectService == nil {
 		return nil, huma.Error500InternalServerError("service not available")
 	}
+
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
 
 	if input.ProjectID == "" {
 		return nil, huma.Error400BadRequest((&common.ProjectIDRequiredError{}).Error())

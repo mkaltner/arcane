@@ -159,7 +159,7 @@ class APIClient {
 		this.client = ky.create({
 			credentials: 'include',
 			retry: 0,
-			timeout: false
+			timeout: 30000
 		});
 	}
 
