@@ -20,7 +20,8 @@ function extractServerMessage(data: any, includeErrors = false): string | undefi
 abstract class BaseAPIService {
 	api = axios.create({
 		baseURL: '/api',
-		withCredentials: true
+		withCredentials: true,
+		timeout: 30_000 // 30s default timeout to prevent indefinite hangs
 	});
 
 	private static tokenRefreshHandler: (() => Promise<string | null>) | null = null;

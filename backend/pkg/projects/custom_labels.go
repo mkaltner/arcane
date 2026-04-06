@@ -96,6 +96,13 @@ func parseArcaneComposeMetadataFromFileInternal(ctx context.Context, composeFile
 	return meta, nil
 }
 
+// ExtractArcaneComposeMetadata extracts Arcane-specific metadata from an already-loaded Compose project.
+// Use this instead of ParseArcaneComposeMetadata when you already have a loaded *composetypes.Project
+// to avoid re-reading and re-parsing the compose file.
+func ExtractArcaneComposeMetadata(project *composetypes.Project) ArcaneComposeMetadata {
+	return extractArcaneComposeMetadata(project)
+}
+
 func extractArcaneComposeMetadata(project *composetypes.Project) ArcaneComposeMetadata {
 	meta := ArcaneComposeMetadata{ServiceIcons: map[string]string{}}
 	if project == nil {

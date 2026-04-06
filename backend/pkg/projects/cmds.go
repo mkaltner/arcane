@@ -9,6 +9,7 @@ import (
 
 	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/docker/compose/v5/pkg/api"
+	"github.com/getarcaneapp/arcane/backend/internal/utils/timeouts"
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/client"
 )
@@ -179,6 +180,9 @@ func deployPhaseFromSummary(cs api.ContainerSummary) string {
 }
 
 func ComposePs(ctx context.Context, proj *types.Project, services []string, all bool) ([]api.ContainerSummary, error) {
+	ctx, cancel := context.WithTimeout(ctx, timeouts.DefaultDockerAPI)
+	defer cancel()
+
 	c, err := NewClient(ctx)
 	if err != nil {
 		return nil, err
@@ -209,6 +213,9 @@ func ComposeLogs(ctx context.Context, projectName string, out io.Writer, follow 
 }
 
 func ListGlobalComposeContainers(ctx context.Context) ([]container.Summary, error) {
+	ctx, cancel := context.WithTimeout(ctx, timeouts.DefaultDockerAPI)
+	defer cancel()
+
 	c, err := NewClient(ctx)
 	if err != nil {
 		return nil, err

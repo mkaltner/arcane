@@ -352,6 +352,10 @@ func (h *ProjectHandler) ListProjects(ctx context.Context, input *ListProjectsIn
 		return nil, huma.Error500InternalServerError("service not available")
 	}
 
+	// Apply request-level timeout to prevent slow Docker/compose operations from hanging
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
 	params := pagination.QueryParams{
 		SearchQuery: pagination.SearchQuery{
 			Search: input.Search,
@@ -371,8 +375,8 @@ func (h *ProjectHandler) ListProjects(ctx context.Context, input *ListProjectsIn
 
 	projects, paginationResp, err := h.projectService.ListProjects(ctx, params)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			return nil, huma.Error500InternalServerError("Request was canceled")
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return nil, huma.Error504GatewayTimeout("Request timed out while loading projects")
 		}
 		return nil, huma.Error500InternalServerError((&common.ProjectListError{Err: err}).Error())
 	}
@@ -535,8 +539,15 @@ func (h *ProjectHandler) GetProject(ctx context.Context, input *GetProjectInput)
 		return nil, huma.Error400BadRequest((&common.ProjectIDRequiredError{}).Error())
 	}
 
+	// Apply request-level timeout to prevent slow Docker/compose operations from hanging
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
 	details, err := h.projectService.GetProjectDetails(ctx, input.ProjectID)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return nil, huma.Error504GatewayTimeout("Request timed out while loading project details")
+		}
 		return nil, huma.Error404NotFound((&common.ProjectDetailsError{Err: err}).Error())
 	}
 

@@ -385,27 +385,39 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectID string
 	resp.HasBuildDirective = false
 	resp.DirName = utils.DerefString(proj.DirName)
 	resp.GitOpsManagedBy = proj.GitOpsManagedBy
-	meta := s.getProjectMetadataFromPath(ctx, proj.Path)
-	resp.IconURL = meta.ProjectIconURL
-	resp.URLs = meta.ProjectURLS
 
 	// Default counts/status from DB (will be overridden if runtime check succeeds)
 	resp.ServiceCount = proj.ServiceCount
 	resp.RunningCount = proj.RunningCount
 	resp.Status = string(proj.Status)
 
-	// Enrich with details
+	// Load compose project ONCE and reuse for metadata, service configs, and runtime services
+	composeFile, _ := projects.DetectComposeFile(proj.Path)
+	var composeProj *composetypes.Project
+	var meta projects.ArcaneComposeMetadata
+
+	if composeFile != "" {
+		composeProj = s.loadComposeProjectForDetails(ctx, proj, composeFile)
+	}
+
+	if composeProj != nil {
+		// Extract metadata from the already-loaded project (avoids re-parsing)
+		meta = projects.ExtractArcaneComposeMetadata(composeProj)
+
+		// Extract service configs
+		s.enrichWithComposeServiceConfigsFromProject(composeProj, &resp)
+	} else {
+		meta = projects.ArcaneComposeMetadata{ServiceIcons: map[string]string{}}
+	}
+	resp.IconURL = meta.ProjectIconURL
+	resp.URLs = meta.ProjectURLS
+
+	// Enrich with include files and GitOps info
 	s.enrichWithIncludeFiles(ctx, proj.Path, &resp)
 	s.enrichWithGitOpsInfo(ctx, proj, &resp)
 
-	// Load compose project for service definitions
-	composeFile, _ := projects.DetectComposeFile(proj.Path)
-	if composeFile != "" {
-		s.enrichWithComposeServiceConfigs(ctx, proj, composeFile, &resp)
-	}
-
-	// Get runtime services and update status/counts
-	services, serr := s.GetProjectServices(ctx, projectID)
+	// Get runtime services from Docker (only needs ComposePs, reuses loaded project + metadata)
+	services, serr := s.getProjectServicesFromCompose(ctx, composeProj, meta)
 	if serr == nil && services != nil {
 		resp.ServiceCount = len(services)
 		_, runningCount := s.getServiceCounts(services)
@@ -430,6 +442,104 @@ func (s *ProjectService) GetProjectDetails(ctx context.Context, projectID string
 	}
 
 	return resp, nil
+}
+
+// loadComposeProjectForDetails loads a compose project for use in GetProjectDetails.
+func (s *ProjectService) loadComposeProjectForDetails(ctx context.Context, proj *models.Project, composeFile string) *composetypes.Project {
+	projectsDirSetting := s.settingsService.GetStringSetting(ctx, "projectsDirectory", "/app/data/projects")
+	projectsDirectory, _ := fs.GetProjectsDirectory(ctx, strings.TrimSpace(projectsDirSetting))
+
+	pathMapper, pmErr := s.getPathMapper(ctx)
+	if pmErr != nil {
+		slog.WarnContext(ctx, "failed to create path mapper, continuing without translation", "error", pmErr)
+	}
+
+	autoInjectEnv := s.settingsService.GetBoolSetting(ctx, "autoInjectEnv", false)
+	composeProj, loadErr := projects.LoadComposeProject(ctx, composeFile, normalizeComposeProjectName(proj.Name), projectsDirectory, autoInjectEnv, pathMapper)
+	if loadErr != nil {
+		slog.WarnContext(ctx, "failed to load compose project for details", "path", composeFile, "error", loadErr)
+		return nil
+	}
+	return composeProj
+}
+
+// enrichWithComposeServiceConfigsFromProject populates service configs from an already-loaded compose project.
+func (s *ProjectService) enrichWithComposeServiceConfigsFromProject(composeProj *composetypes.Project, resp *project.Details) {
+	if composeProj == nil {
+		return
+	}
+	svcList := make([]composetypes.ServiceConfig, 0, len(composeProj.Services))
+	hasBuildDirective := false
+	for _, svc := range composeProj.Services {
+		svcList = append(svcList, svc)
+		if svc.Build != nil {
+			hasBuildDirective = true
+		}
+	}
+	resp.Services = svcList
+	resp.HasBuildDirective = resp.HasBuildDirective || hasBuildDirective
+}
+
+// getProjectServicesFromCompose builds service info from an already-loaded compose project and metadata,
+// only calling Docker (ComposePs) for runtime container state.
+func (s *ProjectService) getProjectServicesFromCompose(ctx context.Context, composeProj *composetypes.Project, meta projects.ArcaneComposeMetadata) ([]ProjectServiceInfo, error) {
+	if composeProj == nil {
+		return nil, nil
+	}
+
+	containers, err := projects.ComposePs(ctx, composeProj, nil, true)
+	if err != nil {
+		slog.Error("compose ps error", "projectName", composeProj.Name, "error", err)
+		return nil, fmt.Errorf("failed to get compose services status: %w", err)
+	}
+
+	serviceConfigs := make(map[string]composetypes.ServiceConfig)
+	for _, svc := range composeProj.Services {
+		serviceConfigs[svc.Name] = svc
+	}
+
+	have := map[string]bool{}
+	var services []ProjectServiceInfo
+
+	for _, c := range containers {
+		var health *string
+		if c.Health != "" {
+			health = new(string(c.Health))
+		}
+
+		var svcConfig *composetypes.ServiceConfig
+		if cfg, ok := serviceConfigs[c.Service]; ok {
+			svcConfig = &cfg
+		}
+
+		services = append(services, ProjectServiceInfo{
+			Name:          c.Service,
+			Image:         c.Image,
+			Status:        string(c.State),
+			ContainerID:   c.ID,
+			ContainerName: c.Name,
+			Ports:         formatPorts(c.Publishers),
+			Health:        health,
+			IconURL:       meta.ServiceIcons[c.Service],
+			ServiceConfig: svcConfig,
+		})
+		have[c.Service] = true
+	}
+
+	for _, svc := range composeProj.Services {
+		if !have[svc.Name] {
+			services = append(services, ProjectServiceInfo{
+				Name:          svc.Name,
+				Image:         svc.Image,
+				Status:        "stopped",
+				Ports:         []string{},
+				IconURL:       meta.ServiceIcons[svc.Name],
+				ServiceConfig: new(svc),
+			})
+		}
+	}
+
+	return services, nil
 }
 
 func (s *ProjectService) enrichWithIncludeFiles(ctx context.Context, projectPath string, resp *project.Details) {
@@ -462,39 +572,6 @@ func (s *ProjectService) enrichWithGitOpsInfo(ctx context.Context, proj *models.
 			}
 		}
 	}
-}
-
-func (s *ProjectService) enrichWithComposeServiceConfigs(ctx context.Context, proj *models.Project, composeFile string, resp *project.Details) {
-	projectsDirSetting := s.settingsService.GetStringSetting(ctx, "projectsDirectory", "/app/data/projects")
-	projectsDirectory, _ := fs.GetProjectsDirectory(ctx, strings.TrimSpace(projectsDirSetting))
-
-	pathMapper, pmErr := s.getPathMapper(ctx)
-	if pmErr != nil {
-		slog.WarnContext(ctx, "failed to create path mapper, continuing without translation", "error", pmErr)
-	}
-
-	autoInjectEnv := s.settingsService.GetBoolSetting(ctx, "autoInjectEnv", false)
-	composeProj, loadErr := projects.LoadComposeProject(ctx, composeFile, normalizeComposeProjectName(proj.Name), projectsDirectory, autoInjectEnv, pathMapper)
-	if loadErr != nil {
-		slog.WarnContext(ctx, "failed to load compose service configs", "path", composeFile, "error", loadErr)
-		return
-	}
-
-	if composeProj == nil {
-		return
-	}
-
-	// Convert map to slice
-	svcList := make([]composetypes.ServiceConfig, 0, len(composeProj.Services))
-	hasBuildDirective := false
-	for _, svc := range composeProj.Services {
-		svcList = append(svcList, svc)
-		if svc.Build != nil {
-			hasBuildDirective = true
-		}
-	}
-	resp.Services = svcList
-	resp.HasBuildDirective = resp.HasBuildDirective || hasBuildDirective
 }
 
 func (s *ProjectService) SyncProjectsFromFileSystem(ctx context.Context) error {
@@ -2335,9 +2412,10 @@ func (s *ProjectService) mapProjectToDto(ctx context.Context, p models.Project, 
 	resp.UpdatedAt = p.UpdatedAt.Format(time.RFC3339)
 	resp.DirName = utils.DerefString(p.DirName)
 	resp.GitOpsManagedBy = p.GitOpsManagedBy
-	meta := s.getProjectMetadataFromPath(ctx, p.Path)
-	resp.IconURL = meta.ProjectIconURL
-	resp.URLs = meta.ProjectURLS
+
+	// Skip compose file parsing for list views — metadata (icons/URLs) is only
+	// needed on the detail page. Parsing every project's compose file here was
+	// the main cause of list-view timeouts with many projects.
 
 	// Find containers for this project
 	normName := normalizeComposeProjectName(p.Name)
@@ -2429,21 +2507,6 @@ func (s *ProjectService) mapProjectToDto(ctx context.Context, p models.Project, 
 	}
 
 	return resp
-}
-
-func (s *ProjectService) getProjectMetadataFromPath(ctx context.Context, projectPath string) projects.ArcaneComposeMetadata {
-	composeFile, err := projects.DetectComposeFile(projectPath)
-	if err != nil {
-		return projects.ArcaneComposeMetadata{ServiceIcons: map[string]string{}}
-	}
-
-	meta, err := projects.ParseArcaneComposeMetadata(ctx, composeFile)
-	if err != nil {
-		slog.WarnContext(ctx, "failed to parse Arcane compose metadata", "path", composeFile, "error", err)
-		return projects.ArcaneComposeMetadata{ServiceIcons: map[string]string{}}
-	}
-
-	return meta
 }
 
 // End Table Functions
