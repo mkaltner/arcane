@@ -305,20 +305,27 @@ func (s *ContainerService) RestartContainer(ctx context.Context, containerID str
 // tryRedeployViaComposeProjectInternal attempts to redeploy a compose-managed
 // container by delegating to ProjectService.UpdateProjectServices, which loads
 // the compose project with full project_directory / env-file / include context
-// and runs pull/stop/up for just the target service. Returns (newContainerID, true)
-// when the compose path was used (success or failure both swallow the original
-// standalone fallback by returning handled=true on success). On any pre-flight
-// failure (no labels, project not in DB, etc.) it returns handled=false so that
-// the caller falls back to the existing standalone redeploy path.
-func (s *ContainerService) tryRedeployViaComposeProjectInternal(ctx context.Context, dockerClient *client.Client, containerInfo container.InspectResponse, containerID, containerName string, user models.User) (string, bool) {
+// and runs pull/stop/up for just the target service.
+//
+// Return semantics:
+//   - handled=false: this container is not eligible for the compose path (no
+//     labels, project not registered in Arcane's DB, etc.). The caller should
+//     fall back to the standalone Docker-API redeploy.
+//   - handled=true, err==nil: compose path ran successfully; newContainerID is
+//     the ID of the recreated container (or the original ID if it couldn't be
+//     re-located by labels).
+//   - handled=true, err!=nil: compose path was attempted and failed. The
+//     caller MUST surface the error and MUST NOT fall back to the standalone
+//     path, which would clobber whatever partial state ComposeUp left behind.
+func (s *ContainerService) tryRedeployViaComposeProjectInternal(ctx context.Context, dockerClient *client.Client, containerInfo container.InspectResponse, containerID, containerName string, user models.User) (string, bool, error) {
 	if s.projectService == nil || containerInfo.Config == nil {
-		return "", false
+		return "", false, nil
 	}
 	labels := containerInfo.Config.Labels
 	projectName := strings.TrimSpace(labels["com.docker.compose.project"])
 	serviceName := strings.TrimSpace(labels["com.docker.compose.service"])
 	if projectName == "" || serviceName == "" {
-		return "", false
+		return "", false, nil
 	}
 
 	proj, err := s.projectService.GetProjectByComposeName(ctx, projectName)
@@ -329,7 +336,7 @@ func (s *ContainerService) tryRedeployViaComposeProjectInternal(ctx context.Cont
 			"service", serviceName,
 			"err", err,
 		)
-		return "", false
+		return "", false, nil
 	}
 
 	slog.InfoContext(ctx, "RedeployContainer: detected compose container, using project-based redeploy",
@@ -347,9 +354,7 @@ func (s *ContainerService) tryRedeployViaComposeProjectInternal(ctx context.Cont
 			"projectId":   proj.ID,
 			"projectName": proj.Name,
 		})
-		// Return handled=true so we don't double-recreate via the standalone path,
-		// which would clobber the compose recreation result.
-		return "", true
+		return "", true, fmt.Errorf("compose redeploy failed for %s/%s: %w", projectName, serviceName, err)
 	}
 
 	newID := s.findComposeServiceContainerIDInternal(ctx, dockerClient, projectName, serviceName)
@@ -371,13 +376,20 @@ func (s *ContainerService) tryRedeployViaComposeProjectInternal(ctx context.Cont
 		slog.WarnContext(ctx, "failed to log compose redeploy event", "err", logErr)
 	}
 
-	return newID, true
+	return newID, true, nil
 }
 
 // findComposeServiceContainerIDInternal locates the (presumably newly recreated)
-// container for a given compose project+service pair. Returns "" when none found.
+// container for a given compose project+service pair using a server-side label
+// filter. When multiple containers match (a stopped predecessor can briefly
+// linger during recreation), the first running one is preferred; otherwise the
+// first match is returned. Returns "" when none found.
 func (s *ContainerService) findComposeServiceContainerIDInternal(ctx context.Context, dockerClient *client.Client, projectName, serviceName string) string {
-	listResult, err := dockerClient.ContainerList(ctx, client.ContainerListOptions{All: true})
+	f := make(client.Filters)
+	f = f.Add("label", "com.docker.compose.project="+projectName)
+	f = f.Add("label", "com.docker.compose.service="+serviceName)
+
+	listResult, err := dockerClient.ContainerList(ctx, client.ContainerListOptions{All: true, Filters: f})
 	if err != nil {
 		slog.WarnContext(ctx, "failed to list containers while resolving compose redeploy result",
 			"project", projectName,
@@ -386,19 +398,17 @@ func (s *ContainerService) findComposeServiceContainerIDInternal(ctx context.Con
 		)
 		return ""
 	}
+
+	var firstMatch string
 	for _, c := range listResult.Items {
-		if c.Labels == nil {
-			continue
+		if firstMatch == "" {
+			firstMatch = c.ID
 		}
-		if strings.TrimSpace(c.Labels["com.docker.compose.project"]) != projectName {
-			continue
+		if strings.EqualFold(string(c.State), "running") {
+			return c.ID
 		}
-		if strings.TrimSpace(c.Labels["com.docker.compose.service"]) != serviceName {
-			continue
-		}
-		return c.ID
 	}
-	return ""
+	return firstMatch
 }
 
 func (s *ContainerService) RedeployContainer(ctx context.Context, containerID string, user models.User) (string, error) {
@@ -440,7 +450,10 @@ func (s *ContainerService) RedeployContainer(ctx context.Context, containerID st
 	// the project's include/project_directory/env-file context are honored. The
 	// standalone Docker-API path below only clones the existing container config
 	// from the daemon and would silently ignore any compose edits.
-	if newID, handled := s.tryRedeployViaComposeProjectInternal(ctx, dockerClient, containerInfo, containerID, containerName, user); handled {
+	if newID, handled, composeErr := s.tryRedeployViaComposeProjectInternal(ctx, dockerClient, containerInfo, containerID, containerName, user); handled {
+		if composeErr != nil {
+			return "", composeErr
+		}
 		return newID, nil
 	}
 
