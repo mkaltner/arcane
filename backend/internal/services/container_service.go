@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	composetypes "github.com/compose-spec/compose-go/v2/types"
 	"github.com/getarcaneapp/arcane/backend/internal/database"
 	"github.com/getarcaneapp/arcane/backend/internal/models"
 	dockerutils "github.com/getarcaneapp/arcane/backend/pkg/dockerutil"
@@ -23,7 +24,6 @@ import (
 	containertypes "github.com/getarcaneapp/arcane/types/container"
 	"github.com/getarcaneapp/arcane/types/containerregistry"
 	imagetypes "github.com/getarcaneapp/arcane/types/image"
-	composetypes "github.com/compose-spec/compose-go/v2/types"
 	"github.com/moby/moby/api/pkg/stdcopy"
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/network"
@@ -331,12 +331,25 @@ func (s *ContainerService) tryRedeployViaComposeProjectInternal(ctx context.Cont
 	}
 
 	proj, err := s.projectService.GetProjectByComposeName(ctx, projectName)
-	if err != nil || proj == nil {
-		slog.WarnContext(ctx, "RedeployContainer: compose labels found but project not registered, falling back to standalone redeploy",
+	if err != nil {
+		// Distinguish "not found" (safe to fall back to standalone) from real DB
+		// errors (should surface so a transient failure doesn't silently recreate
+		// the container from stale cached config).
+		if strings.Contains(err.Error(), "not found") {
+			slog.WarnContext(ctx, "RedeployContainer: compose project not registered, falling back to standalone redeploy",
+				"containerId", containerID,
+				"project", projectName,
+				"service", serviceName,
+			)
+			return "", false, nil
+		}
+		return "", true, fmt.Errorf("failed to look up compose project %s: %w", projectName, err)
+	}
+	if proj == nil {
+		slog.WarnContext(ctx, "RedeployContainer: compose project not registered, falling back to standalone redeploy",
 			"containerId", containerID,
 			"project", projectName,
 			"service", serviceName,
-			"err", err,
 		)
 		return "", false, nil
 	}
