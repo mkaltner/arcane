@@ -155,6 +155,9 @@
 	//
 	// Include file content is lazy-loaded (PR #2259), so we fetch it on-demand here,
 	// stopping as soon as we find the file that defines the service.
+	// $state + $effect is used here instead of $derived because include file content
+	// is lazy-loaded via async API calls (PR #2259). $derived does not support async;
+	// revisit when Svelte's experimental.async $derived is stable.
 	let serviceComposeSource = $state(null as { includeFile: IncludeFile | null } | null);
 
 	const hasServiceInContent = (content: string, serviceName: string): boolean => {
@@ -188,9 +191,11 @@
 			return;
 		}
 
+		serviceComposeSource = null;
 		let cancelled = false;
 		(async () => {
-			const envId = await environmentStore.getCurrentEnvironmentId();
+			const envId = await environmentStore.getCurrentEnvironmentId().catch(() => null);
+			if (!envId || cancelled) return;
 			for (const f of includes) {
 				if (cancelled) return;
 
