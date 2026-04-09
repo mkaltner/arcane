@@ -153,13 +153,8 @@
 	// Returns { includeFile: null } for root compose, { includeFile: <file> } for a sub-file,
 	// or null if the service isn't found anywhere (hides the tab).
 	//
-	// Include file content is lazy-loaded (PR #2259), so we fetch it on-demand here,
-	// stopping as soon as we find the file that defines the service.
-	// $state + $effect is used here instead of $derived because include file content
-	// is lazy-loaded via async API calls (PR #2259). $derived does not support async;
-	// revisit when Svelte's experimental.async $derived is stable.
-	let serviceComposeSource = $state(null as { includeFile: IncludeFile | null } | null);
-
+	// Include file content is lazy-loaded (PR #2259), so we fetch on-demand via
+	// getProjectFileForEnvironment, stopping as soon as the service is found.
 	const hasServiceInContent = (content: string, serviceName: string): boolean => {
 		try {
 			const parsed = parseYaml(content) as Record<string, unknown> | null;
@@ -169,63 +164,46 @@
 		}
 	};
 
-	$effect(() => {
-		const proj = project;
-		const svcName = composeServiceName;
-		const info = composeInfo;
-		if (!proj || !svcName || !info) {
-			serviceComposeSource = null;
-			return;
-		}
+	async function resolveServiceComposeSource(
+		proj: typeof project,
+		svcName: string,
+		info: typeof composeInfo
+	): Promise<{ includeFile: IncludeFile | null } | null> {
+		if (!proj || !svcName || !info) return null;
 
 		// Check root compose first (content is always present)
 		if (proj.composeContent && hasServiceInContent(proj.composeContent, svcName)) {
-			serviceComposeSource = { includeFile: null };
-			return;
+			return { includeFile: null };
 		}
 
 		// Lazy-fetch include file contents one at a time until we find the service
 		const includes = proj.includeFiles ?? [];
-		if (includes.length === 0) {
-			serviceComposeSource = null;
-			return;
-		}
+		if (includes.length === 0) return null;
 
-		serviceComposeSource = null;
-		let cancelled = false;
-		(async () => {
-			const envId = await environmentStore.getCurrentEnvironmentId().catch(() => null);
-			if (!envId || cancelled) return;
-			for (const f of includes) {
-				if (cancelled) return;
+		const envId = await environmentStore.getCurrentEnvironmentId().catch(() => null);
+		if (!envId) return null;
 
-				// If content was already present (non-lazy), use it directly
-				if (f.content) {
-					if (hasServiceInContent(f.content, svcName)) {
-						serviceComposeSource = { includeFile: f };
-						return;
-					}
-					continue;
-				}
-
-				try {
-					const loaded = await projectService.getProjectFileForEnvironment(envId, proj.id, f.relativePath);
-					if (cancelled) return;
-					if (loaded?.content && hasServiceInContent(loaded.content, svcName)) {
-						serviceComposeSource = { includeFile: { ...f, content: loaded.content } };
-						return;
-					}
-				} catch {
-					// Skip files that fail to load
-				}
+		for (const f of includes) {
+			if (f.content && hasServiceInContent(f.content, svcName)) {
+				return { includeFile: f };
 			}
-			if (!cancelled) serviceComposeSource = null;
-		})();
+			try {
+				const loaded = await projectService.getProjectFileForEnvironment(envId, proj.id, f.relativePath);
+				if (loaded?.content && hasServiceInContent(loaded.content, svcName)) {
+					return { includeFile: { ...f, content: loaded.content } };
+				}
+			} catch {
+				// Skip files that fail to load
+			}
+		}
+		return null;
+	}
 
-		return () => { cancelled = true; };
-	});
+	const serviceComposeSourcePromise = $derived(
+		resolveServiceComposeSource(project, composeServiceName, composeInfo)
+	);
 
-	const showComposeTab = $derived(!!composeInfo && !!serviceComposeSource);
+	const showComposeTab = $derived(!!composeInfo && !!project);
 
 	const tabItems = $derived<TabItem[]>([
 		{ value: 'overview', label: m.common_overview(), icon: ContainersIcon },
@@ -383,18 +361,20 @@
 				</Tabs.Content>
 			{/if}
 
-			{#if project && serviceComposeSource}
-				<Tabs.Content value="compose" class="h-full min-h-0">
-					{#key `${project?.id}-${serviceComposeSource?.includeFile?.relativePath ?? 'root'}`}
-						<ContainerComposePanel
-							{project}
-							serviceName={composeServiceName}
-							includeFile={serviceComposeSource.includeFile}
-							rootFilename={rootComposeFilename}
-						/>
-					{/key}
-				</Tabs.Content>
-			{/if}
+			{#await serviceComposeSourcePromise then serviceComposeSource}
+				{#if project && serviceComposeSource}
+					<Tabs.Content value="compose" class="h-full min-h-0">
+						{#key `${project?.id}-${serviceComposeSource?.includeFile?.relativePath ?? 'root'}`}
+							<ContainerComposePanel
+								{project}
+								serviceName={composeServiceName}
+								includeFile={serviceComposeSource.includeFile}
+								rootFilename={rootComposeFilename}
+							/>
+						{/key}
+					</Tabs.Content>
+				{/if}
+			{/await}
 		{/snippet}
 	</TabbedPageLayout>
 {:else}
