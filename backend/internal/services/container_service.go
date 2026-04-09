@@ -19,9 +19,11 @@ import (
 	"github.com/getarcaneapp/arcane/backend/pkg/libarcane/containerstats"
 	"github.com/getarcaneapp/arcane/backend/pkg/libarcane/timeouts"
 	"github.com/getarcaneapp/arcane/backend/pkg/pagination"
+	"github.com/getarcaneapp/arcane/backend/pkg/projects"
 	containertypes "github.com/getarcaneapp/arcane/types/container"
 	"github.com/getarcaneapp/arcane/types/containerregistry"
 	imagetypes "github.com/getarcaneapp/arcane/types/image"
+	composetypes "github.com/compose-spec/compose-go/v2/types"
 	"github.com/moby/moby/api/pkg/stdcopy"
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/network"
@@ -357,7 +359,7 @@ func (s *ContainerService) tryRedeployViaComposeProjectInternal(ctx context.Cont
 		return "", true, fmt.Errorf("compose redeploy failed for %s/%s: %w", projectName, serviceName, err)
 	}
 
-	newID := s.findComposeServiceContainerIDInternal(ctx, dockerClient, projectName, serviceName)
+	newID := s.findComposeServiceContainerIDInternal(ctx, projectName, serviceName)
 	if newID == "" {
 		// Recreated successfully but couldn't locate the new container; return the
 		// original ID so the handler can degrade gracefully.
@@ -380,18 +382,14 @@ func (s *ContainerService) tryRedeployViaComposeProjectInternal(ctx context.Cont
 }
 
 // findComposeServiceContainerIDInternal locates the (presumably newly recreated)
-// container for a given compose project+service pair using a server-side label
-// filter. When multiple containers match (a stopped predecessor can briefly
+// container for a given compose project+service pair using the compose SDK's Ps
+// command. When multiple containers match (a stopped predecessor can briefly
 // linger during recreation), the first running one is preferred; otherwise the
 // first match is returned. Returns "" when none found.
-func (s *ContainerService) findComposeServiceContainerIDInternal(ctx context.Context, dockerClient *client.Client, projectName, serviceName string) string {
-	f := make(client.Filters)
-	f = f.Add("label", "com.docker.compose.project="+projectName)
-	f = f.Add("label", "com.docker.compose.service="+serviceName)
-
-	listResult, err := dockerClient.ContainerList(ctx, client.ContainerListOptions{All: true, Filters: f})
+func (s *ContainerService) findComposeServiceContainerIDInternal(ctx context.Context, projectName, serviceName string) string {
+	containers, err := projects.ComposePs(ctx, &composetypes.Project{Name: projectName}, []string{serviceName}, true)
 	if err != nil {
-		slog.WarnContext(ctx, "failed to list containers while resolving compose redeploy result",
+		slog.WarnContext(ctx, "failed to resolve container via compose ps after redeploy",
 			"project", projectName,
 			"service", serviceName,
 			"err", err,
@@ -400,11 +398,14 @@ func (s *ContainerService) findComposeServiceContainerIDInternal(ctx context.Con
 	}
 
 	var firstMatch string
-	for _, c := range listResult.Items {
+	for _, c := range containers {
+		if c.Service != serviceName {
+			continue
+		}
 		if firstMatch == "" {
 			firstMatch = c.ID
 		}
-		if strings.EqualFold(string(c.State), "running") {
+		if c.State == "running" {
 			return c.ID
 		}
 	}
