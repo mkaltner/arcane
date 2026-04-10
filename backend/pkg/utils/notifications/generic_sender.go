@@ -45,11 +45,22 @@ func BuildGenericURL(config models.GenericConfig) (string, error) {
 	// Shoutrrr's generic service uses HTTP or HTTPS based on the DisableTLS setting
 	scheme := "generic"
 
-	// Start with the base URL
+	// Start with the base URL.
+	// Preserve any query parameters from the original webhook URL by encoding
+	// the ? as %3F so it stays in the path component. Shoutrrr decodes the path
+	// when constructing the outbound HTTP request, recovering the original query
+	// string for the upstream service.
+	rawPath := webhookURL.Path
+	decodedPath := webhookURL.Path
+	if webhookURL.RawQuery != "" {
+		rawPath = webhookURL.Path + "%3F" + webhookURL.RawQuery
+		decodedPath = webhookURL.Path + "?" + webhookURL.RawQuery
+	}
 	shoutrrrURL := &url.URL{
-		Scheme: scheme,
-		Host:   webhookURL.Host,
-		Path:   webhookURL.Path,
+		Scheme:  scheme,
+		Host:    webhookURL.Host,
+		RawPath: rawPath,
+		Path:    decodedPath,
 	}
 
 	// Build query parameters
@@ -116,14 +127,11 @@ func SendGenericWithTitle(ctx context.Context, config models.GenericConfig, titl
 		return fmt.Errorf("failed to create shoutrrr Generic sender: %w", err)
 	}
 
-	// Build params with title
+	// Build params with title. Always use "title" as the param key — Shoutrrr's
+	// generic service maps it to the configured titlekey in the JSON payload.
 	params := shoutrrrTypes.Params{}
 	if title != "" {
-		titleKey := config.TitleKey
-		if titleKey == "" {
-			titleKey = "title"
-		}
-		params[titleKey] = title
+		params["title"] = title
 	}
 
 	errs := sender.Send(message, &params)
