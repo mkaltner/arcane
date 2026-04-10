@@ -386,8 +386,30 @@
 					}
 				}
 
-				applyProjectDetailsToEditor(savedProject, 'saved');
-				await syncProjectQueries(savedProject);
+				// Preserve the editor's current values as the new baseline rather
+				// than re-applying the server response via applyProjectDetailsToEditor,
+				// which triggers a reactive chain that reverts the editor content.
+				originalName = $inputs.name.value;
+				originalComposeContent = $inputs.composeContent.value;
+				originalEnvContent = $inputs.envContent.value;
+				originalIncludeFiles = { ...includeFilesState };
+
+				// Update the project object for runtime info (status, services, etc.)
+				// without touching the editor inputs.
+				const enriched = withLoadedProjectFileContent(savedProject);
+				project = enriched;
+				syncIncludeFileUiState(enriched);
+
+				await syncProjectQueries(enriched);
+
+				// Set the signature from data.project (the page load value) so the
+				// $effect guard sees no difference and doesn't re-apply stale content.
+				// data.project may still hold the pre-save value until the next
+				// navigation; matching its signature prevents the effect from
+				// overwriting the editor with old content.
+				const currentPageProject = withLoadedProjectFileContent(data.project);
+				lastSeenProjectSignature = buildProjectSyncSignature(currentPageProject);
+
 				toast.success(m.common_update_success({ resource: m.project() }));
 			}
 		});
