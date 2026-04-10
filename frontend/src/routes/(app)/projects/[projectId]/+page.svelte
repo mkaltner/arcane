@@ -386,12 +386,27 @@
 					}
 				}
 
-				applyProjectDetailsToEditor(savedProject, 'saved');
-				// Pass the enriched project (with locally-preserved include file
-				// content) to the query cache so that any reactive re-read after
-				// save doesn't revert the editor to the lazy-loaded (content-less)
-				// server response.
-				await syncProjectQueries(withLoadedProjectFileContent(savedProject));
+				// Preserve the editor's current values as the new baseline rather
+				// than re-applying the server response via applyProjectDetailsToEditor,
+				// which triggers a reactive chain that reverts the editor content.
+				originalName = $inputs.name.value;
+				originalComposeContent = $inputs.composeContent.value;
+				originalEnvContent = $inputs.envContent.value;
+				originalIncludeFiles = { ...includeFilesState };
+
+				// Update the project object for runtime info (status, services, etc.)
+				// without touching the editor inputs.
+				const enriched = withLoadedProjectFileContent(savedProject);
+				project = enriched;
+				syncIncludeFileUiState(enriched);
+
+				await syncProjectQueries(enriched);
+
+				// Match the signature to data.project (the stale page-load value)
+				// so the $effect guard doesn't re-apply old content to the editor.
+				const currentPageProject = withLoadedProjectFileContent(data.project);
+				lastSeenProjectSignature = buildProjectSyncSignature(currentPageProject);
+
 				toast.success(m.common_update_success({ resource: m.project() }));
 			}
 		});
