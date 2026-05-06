@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -242,6 +243,13 @@ func saveCLIUpdateChannelInternal(channel string) error {
 func resolveCLIUpdateTargetInternal() (string, error) {
 	if strings.TrimSpace(cliUpdateTarget) != "" {
 		return filepath.Abs(strings.TrimSpace(cliUpdateTarget))
+	}
+	if pathTarget, err := exec.LookPath("arcane-cli"); err == nil {
+		absTarget, err := filepath.Abs(pathTarget)
+		if err != nil {
+			return "", fmt.Errorf("failed to resolve arcane-cli from PATH: %w", err)
+		}
+		return filepath.EvalSymlinks(absTarget)
 	}
 	exe, err := os.Executable()
 	if err != nil {
