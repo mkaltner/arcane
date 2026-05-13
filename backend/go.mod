@@ -1,10 +1,11 @@
 module github.com/getarcaneapp/arcane/backend
 
-go 1.26.2
+go 1.26.3
 
-replace github.com/getarcaneapp/arcane/cli => ../cli
-
-replace github.com/getarcaneapp/arcane/types => ../types
+replace ( 
+	github.com/getarcaneapp/arcane/cli => ../cli
+	github.com/getarcaneapp/arcane/types => ../types
+)
 
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.32.17
