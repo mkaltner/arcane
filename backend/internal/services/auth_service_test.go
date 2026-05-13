@@ -69,6 +69,32 @@ func makeAccessToken(t *testing.T, secret []byte, subject string, id string, use
 	return signed
 }
 
+func makeRefreshToken(t *testing.T, secret []byte, subject string, id string, exp time.Time) string {
+	t.Helper()
+	claims := jwt.RegisteredClaims{
+		ID:        id,
+		Subject:   subject,
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		ExpiresAt: jwt.NewNumericDate(exp),
+	}
+	tok := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signed, err := tok.SignedString(secret)
+	if err != nil {
+		t.Fatalf("sign: %v", err)
+	}
+	return signed
+}
+
+func makeUnsignedToken(t *testing.T, claims jwt.Claims) string {
+	t.Helper()
+	tok := jwt.NewWithClaims(jwt.SigningMethodNone, claims)
+	signed, err := tok.SignedString(jwt.UnsafeAllowNoneSignatureType)
+	if err != nil {
+		t.Fatalf("sign none: %v", err)
+	}
+	return signed
+}
+
 func TestVerifyToken_ValidClaims(t *testing.T) {
 	db := setupAuthServiceTestDB(t)
 	userSvc := NewUserService(db)
@@ -107,6 +133,28 @@ func TestVerifyToken_ValidClaims(t *testing.T) {
 	}
 	if verifiedUser.DisplayName == nil || *verifiedUser.DisplayName != "Alice" {
 		t.Errorf("displayName %v", verifiedUser.DisplayName)
+	}
+}
+
+func TestVerifyToken_RejectsNonHMACAlg(t *testing.T) {
+	s := newTestAuthService("")
+	exp := time.Now().Add(5 * time.Minute)
+	token := makeUnsignedToken(t, UserClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        "u1",
+			Subject:   "access",
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(exp),
+		},
+		UserID:     "u1",
+		Username:   "bob",
+		Roles:      []string{"user"},
+		AppVersion: config.Version,
+	})
+
+	_, err := s.VerifyToken(context.Background(), token)
+	if !errors.Is(err, ErrInvalidToken) {
+		t.Errorf("want ErrInvalidToken, got %v", err)
 	}
 }
 
@@ -230,6 +278,49 @@ func TestVerifyToken_VersionMismatch(t *testing.T) {
 	}
 
 	config.Version = oldVersion
+}
+
+func TestRefreshToken_Valid(t *testing.T) {
+	db := setupAuthServiceTestDB(t)
+	userSvc := NewUserService(db)
+	settingsSvc, err := NewSettingsService(context.Background(), db)
+	require.NoError(t, err)
+	s := newTestAuthService("")
+	s.userService = userSvc
+	s.settingsService = settingsSvc
+
+	user := &models.User{
+		BaseModel: models.BaseModel{ID: "u-refresh"},
+		Username:  "refresh-user",
+		Roles:     models.StringSlice{"user"},
+	}
+	_, err = userSvc.CreateUser(context.Background(), user)
+	require.NoError(t, err)
+
+	exp := time.Now().Add(5 * time.Minute)
+	token := makeRefreshToken(t, s.jwtSecret, "refresh", "u-refresh", exp)
+
+	tokenPair, err := s.RefreshToken(context.Background(), token)
+	require.NoError(t, err)
+	require.NotNil(t, tokenPair)
+	require.NotEmpty(t, tokenPair.AccessToken)
+	require.NotEmpty(t, tokenPair.RefreshToken)
+}
+
+func TestRefreshToken_RejectsNonHMACAlg(t *testing.T) {
+	s := newTestAuthService("")
+	exp := time.Now().Add(5 * time.Minute)
+	token := makeUnsignedToken(t, jwt.RegisteredClaims{
+		ID:        "u1",
+		Subject:   "refresh",
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		ExpiresAt: jwt.NewNumericDate(exp),
+	})
+
+	_, err := s.RefreshToken(context.Background(), token)
+	if !errors.Is(err, ErrInvalidToken) {
+		t.Errorf("want ErrInvalidToken, got %v", err)
+	}
 }
 
 func TestGetOidcConfigurationStatus(t *testing.T) {

@@ -565,6 +565,9 @@ func (s *AuthService) persistOidcTokens(user *models.User, tokenResp *auth.OidcT
 func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*TokenPair, error) {
 	token, err := jwt.ParseWithClaims(refreshToken, &jwt.RegisteredClaims{},
 		func(t *jwt.Token) (any, error) {
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+			}
 			return s.jwtSecret, nil
 		})
 	if err != nil {
@@ -605,6 +608,9 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*T
 func (s *AuthService) VerifyToken(ctx context.Context, accessToken string) (*models.User, error) {
 	token, err := jwt.ParseWithClaims(accessToken, &UserClaims{},
 		func(t *jwt.Token) (any, error) {
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+			}
 			return s.jwtSecret, nil
 		})
 	if err != nil {
