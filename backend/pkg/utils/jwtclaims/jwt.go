@@ -83,19 +83,45 @@ func GetStringSliceClaim(m map[string]any, key string) []string {
 	return nil
 }
 
-// CheckOrGenerateJwtSecret verifies a secret exists or generates a random one
-func CheckOrGenerateJwtSecret(jwtSecret string) []byte {
-	var secretBytes []byte
-	if jwtSecret != "" {
-		secretBytes = []byte(jwtSecret)
-		return secretBytes
-	} else {
-		secretBytes = make([]byte, 32)
+const (
+	// KnownInsecureJWTSecret is the placeholder shipped in config.go's struct
+	// tag; it must never sign real tokens. Keep in sync with the `default:` tag
+	// on Config.JWTSecret.
+	KnownInsecureJWTSecret = "default-jwt-secret-change-me"
+	// MinJWTSecretLength matches the 32-byte floor enforced for ENCRYPTION_KEY.
+	MinJWTSecretLength = 32
+)
+
+// CheckOrGenerateJwtSecret returns the HMAC signing key for JWTs.
+//
+// When requireExplicit is true (production manager), a real secret is mandatory:
+// an empty, default, or too-short JWT_SECRET panics at startup — mirroring the
+// ENCRYPTION_KEY guard in libarcane/crypto. Otherwise (development / agent mode)
+// a random per-boot key is generated when none (or only the public default) is
+// configured, so the public default never becomes a live signing key.
+func CheckOrGenerateJwtSecret(jwtSecret string, requireExplicit bool) []byte {
+	isDefault := jwtSecret == "" || jwtSecret == KnownInsecureJWTSecret
+
+	if requireExplicit {
+		if isDefault {
+			panic("JWT_SECRET is required in production. Set JWT_SECRET to a unique " +
+				"random value of at least 32 characters (e.g. `openssl rand -base64 32`).")
+		}
+		if len(jwtSecret) < MinJWTSecretLength {
+			panic(fmt.Sprintf("JWT_SECRET must be at least %d characters (got %d).",
+				MinJWTSecretLength, len(jwtSecret)))
+		}
+		return []byte(jwtSecret)
+	}
+
+	if isDefault {
+		secretBytes := make([]byte, 32)
 		if _, err := rand.Read(secretBytes); err != nil {
 			panic(fmt.Errorf("failed to generate random JWT secret: %w", err))
 		}
+		return secretBytes
 	}
-	return secretBytes
+	return []byte(jwtSecret)
 }
 
 // ParseJWTClaims decodes and unmarshals the payload part of a JWT

@@ -82,12 +82,15 @@ type AuthService struct {
 }
 
 func NewAuthService(userService *UserService, settingsService *SettingsService, eventService *EventService, sessionService *SessionService, jwtSecret string, cfg *config.Config) *AuthService {
+	// Production managers must supply an explicit, non-default JWT_SECRET (fail
+	// closed, mirroring the ENCRYPTION_KEY guard). Dev and agent mode auto-generate.
+	requireExplicitSecret := cfg.Environment == config.AppEnvironmentProduction && !cfg.AgentMode
 	return &AuthService{
 		userService:     userService,
 		settingsService: settingsService,
 		eventService:    eventService,
 		sessionService:  sessionService,
-		jwtSecret:       jwtclaims.CheckOrGenerateJwtSecret(jwtSecret),
+		jwtSecret:       jwtclaims.CheckOrGenerateJwtSecret(jwtSecret, requireExplicitSecret),
 		refreshExpiry:   cfg.JWTRefreshExpiry,
 		config:          cfg,
 		tokenCache:      cache.NewTTL[verifiedTokenEntry](15 * time.Second),
