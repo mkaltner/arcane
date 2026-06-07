@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/getarcaneapp/arcane/cli/internal/config"
-	"github.com/getarcaneapp/arcane/cli/internal/output"
-	runtimectx "github.com/getarcaneapp/arcane/cli/internal/runtime"
+	"github.com/getarcaneapp/arcane/cli/v2/internal/config"
+	"github.com/getarcaneapp/arcane/cli/v2/internal/output"
+	runtimectx "github.com/getarcaneapp/arcane/cli/v2/internal/runtime"
 	"github.com/spf13/cobra"
 )
 

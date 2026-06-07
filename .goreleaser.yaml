@@ -40,9 +40,9 @@ builds:
     ldflags:
       - -w -s
       - -buildid={{ .Version }}
-      - -X github.com/getarcaneapp/arcane/backend/internal/config.Version={{ .Version }}
-      - -X github.com/getarcaneapp/arcane/backend/internal/config.Revision={{ .ShortCommit }}
-      - -X github.com/getarcaneapp/arcane/backend/internal/config.BuildTime={{ .Date }}
+      - -X github.com/getarcaneapp/arcane/backend/v2/internal/config.Version={{ .Version }}
+      - -X github.com/getarcaneapp/arcane/backend/v2/internal/config.Revision={{ .ShortCommit }}
+      - -X github.com/getarcaneapp/arcane/backend/v2/internal/config.BuildTime={{ .Date }}
     flags:
       - -trimpath
     mod_timestamp: "{{ .CommitTimestamp }}"
@@ -72,9 +72,9 @@ builds:
     ldflags:
       - -w -s
       - -buildid={{ .Version }}
-      - -X github.com/getarcaneapp/arcane/backend/internal/config.Version={{ .Version }}
-      - -X github.com/getarcaneapp/arcane/backend/internal/config.Revision={{ .ShortCommit }}
-      - -X github.com/getarcaneapp/arcane/backend/internal/config.BuildTime={{ .Date }}
+      - -X github.com/getarcaneapp/arcane/backend/v2/internal/config.Version={{ .Version }}
+      - -X github.com/getarcaneapp/arcane/backend/v2/internal/config.Revision={{ .ShortCommit }}
+      - -X github.com/getarcaneapp/arcane/backend/v2/internal/config.BuildTime={{ .Date }}
     flags:
       - -trimpath
     mod_timestamp: "{{ .CommitTimestamp }}"
@@ -102,8 +102,8 @@ builds:
     ldflags:
       - -w -s
       - -buildid={{ .Version }}
-      - -X github.com/getarcaneapp/arcane/cli/internal/config.Version={{ .Version }}
-      - -X github.com/getarcaneapp/arcane/cli/internal/config.Revision={{ .ShortCommit }}
+      - -X github.com/getarcaneapp/arcane/cli/v2/internal/config.Version={{ .Version }}
+      - -X github.com/getarcaneapp/arcane/cli/v2/internal/config.Revision={{ .ShortCommit }}
     flags:
       - -trimpath
     mod_timestamp: "{{ .CommitTimestamp }}"

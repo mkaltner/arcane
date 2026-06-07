@@ -13,9 +13,9 @@ import (
 	"time"
 
 	ref "github.com/distribution/reference"
-	"github.com/getarcaneapp/arcane/backend/internal/database"
-	"github.com/getarcaneapp/arcane/backend/internal/models"
-	"github.com/getarcaneapp/arcane/types/imageupdate"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/database"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
+	"github.com/getarcaneapp/arcane/types/v2/imageupdate"
 	glsqlite "github.com/glebarez/sqlite"
 	dockertypescontainer "github.com/moby/moby/api/types/container"
 	dockertypesimage "github.com/moby/moby/api/types/image"

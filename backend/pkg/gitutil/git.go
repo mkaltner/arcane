@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/getarcaneapp/arcane/types/gitops"
+	"github.com/getarcaneapp/arcane/types/v2/gitops"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"

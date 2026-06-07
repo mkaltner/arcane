@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/getarcaneapp/arcane/backend/pkg/libarcane/edge"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/libarcane/edge"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )

@@ -8,12 +8,12 @@ import (
 	"sort"
 	"time"
 
-	"github.com/getarcaneapp/arcane/backend/internal/config"
-	"github.com/getarcaneapp/arcane/backend/internal/database"
-	"github.com/getarcaneapp/arcane/backend/internal/models"
-	"github.com/getarcaneapp/arcane/types/jobschedule"
-	"github.com/getarcaneapp/arcane/types/meta"
-	schedulertypes "github.com/getarcaneapp/arcane/types/scheduler"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/config"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/database"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
+	"github.com/getarcaneapp/arcane/types/v2/jobschedule"
+	"github.com/getarcaneapp/arcane/types/v2/meta"
+	schedulertypes "github.com/getarcaneapp/arcane/types/v2/scheduler"
 	"github.com/robfig/cron/v3"
 	"gorm.io/gorm"
 )

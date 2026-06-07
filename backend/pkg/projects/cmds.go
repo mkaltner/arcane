@@ -12,7 +12,7 @@ import (
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/client"
 
-	"github.com/getarcaneapp/arcane/backend/pkg/utils"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils"
 )
 
 // ProgressWriterKey can be set on a context to enable JSON-line progress updates.

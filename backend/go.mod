@@ -1,10 +1,10 @@
-module github.com/getarcaneapp/arcane/backend
+module github.com/getarcaneapp/arcane/backend/v2
 
 go 1.26.4
 
 replace (
-	github.com/getarcaneapp/arcane/cli => ../cli
-	github.com/getarcaneapp/arcane/types => ../types
+	github.com/getarcaneapp/arcane/cli/v2 => ../cli
+	github.com/getarcaneapp/arcane/types/v2 => ../types
 )
 
 tool github.com/google/wire/cmd/wire
@@ -24,8 +24,8 @@ require (
 	github.com/docker/compose/v5 v5.1.4
 	github.com/docker/go-units v0.5.0
 	github.com/fsnotify/fsnotify v1.10.1
-	github.com/getarcaneapp/arcane/cli v1.19.5
-	github.com/getarcaneapp/arcane/types v1.19.5
+	github.com/getarcaneapp/arcane/cli/v2 v2.0.0
+	github.com/getarcaneapp/arcane/types/v2 v2.0.0
 	github.com/getarcaneapp/updater v0.3.6
 	github.com/glebarez/sqlite v1.11.0
 	github.com/go-git/go-git/v5 v5.19.1

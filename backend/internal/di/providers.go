@@ -10,12 +10,12 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/getarcaneapp/arcane/backend/internal/config"
-	"github.com/getarcaneapp/arcane/backend/internal/database"
-	"github.com/getarcaneapp/arcane/backend/internal/middleware"
-	"github.com/getarcaneapp/arcane/backend/internal/services"
-	pkg_scheduler "github.com/getarcaneapp/arcane/backend/pkg/scheduler"
-	"github.com/getarcaneapp/arcane/backend/resources"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/config"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/database"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/middleware"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/services"
+	pkg_scheduler "github.com/getarcaneapp/arcane/backend/v2/pkg/scheduler"
+	"github.com/getarcaneapp/arcane/backend/v2/resources"
 )
 
 // Services is the single aggregate of every constructed service. wire populates

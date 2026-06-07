@@ -11,11 +11,11 @@ import (
 
 	"github.com/docker/cli/cli/config"
 	configtypes "github.com/docker/cli/cli/config/types"
-	"github.com/getarcaneapp/arcane/backend/internal/common"
-	utilsregistry "github.com/getarcaneapp/arcane/backend/pkg/libarcane/registryauth"
-	"github.com/getarcaneapp/arcane/backend/pkg/libarcane/timeouts"
-	buildtypes "github.com/getarcaneapp/arcane/types/builds"
-	imagetypes "github.com/getarcaneapp/arcane/types/image"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/common"
+	utilsregistry "github.com/getarcaneapp/arcane/backend/v2/pkg/libarcane/registryauth"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/libarcane/timeouts"
+	buildtypes "github.com/getarcaneapp/arcane/types/v2/builds"
+	imagetypes "github.com/getarcaneapp/arcane/types/v2/image"
 	buildkit "github.com/moby/buildkit/client"
 	"github.com/moby/buildkit/session/auth/authprovider"
 )

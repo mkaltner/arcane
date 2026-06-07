@@ -7,13 +7,13 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/getarcaneapp/arcane/backend/internal/common"
-	"github.com/getarcaneapp/arcane/backend/internal/config"
-	"github.com/getarcaneapp/arcane/backend/internal/models"
-	"github.com/getarcaneapp/arcane/backend/internal/services"
-	"github.com/getarcaneapp/arcane/backend/pkg/authz"
-	pkgutils "github.com/getarcaneapp/arcane/backend/pkg/utils"
-	"github.com/getarcaneapp/arcane/backend/pkg/utils/cookie"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/common"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/config"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/services"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/authz"
+	pkgutils "github.com/getarcaneapp/arcane/backend/v2/pkg/utils"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils/cookie"
 	"github.com/labstack/echo/v4"
 )
 

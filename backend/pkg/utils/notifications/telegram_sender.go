@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/getarcaneapp/arcane/backend/internal/models"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
 	"github.com/nicholas-fedor/shoutrrr"
 	"github.com/nicholas-fedor/shoutrrr/pkg/services/chat/telegram"
 )

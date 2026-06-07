@@ -9,12 +9,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 
-	"github.com/getarcaneapp/arcane/backend/internal/database"
-	"github.com/getarcaneapp/arcane/backend/internal/models"
-	activitylib "github.com/getarcaneapp/arcane/backend/pkg/libarcane/activity"
-	"github.com/getarcaneapp/arcane/backend/pkg/pagination"
-	"github.com/getarcaneapp/arcane/backend/pkg/utils"
-	activitytypes "github.com/getarcaneapp/arcane/types/activity"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/database"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
+	activitylib "github.com/getarcaneapp/arcane/backend/v2/pkg/libarcane/activity"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/pagination"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils"
+	activitytypes "github.com/getarcaneapp/arcane/types/v2/activity"
 )
 
 func setupActivityServiceTestDBInternal(t *testing.T) *database.DB {

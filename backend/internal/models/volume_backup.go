@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/getarcaneapp/arcane/types/volume"
+	"github.com/getarcaneapp/arcane/types/v2/volume"
 )
 
 type VolumeBackup struct {

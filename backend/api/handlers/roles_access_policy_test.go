@@ -3,7 +3,7 @@ package handlers
 import (
 	"testing"
 
-	"github.com/getarcaneapp/arcane/backend/pkg/authz"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/authz"
 	"github.com/stretchr/testify/require"
 )
 

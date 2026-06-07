@@ -4,9 +4,9 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/getarcaneapp/arcane/backend/api/handlers"
-	"github.com/getarcaneapp/arcane/backend/internal/services"
-	"github.com/getarcaneapp/arcane/backend/pkg/utils"
+	"github.com/getarcaneapp/arcane/backend/v2/api/handlers"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/services"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils"
 	"github.com/labstack/echo/v4"
 )
 

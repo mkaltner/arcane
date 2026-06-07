@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/getarcaneapp/arcane/backend/pkg/pagination"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/pagination"
 	dockercontainer "github.com/moby/moby/api/types/container"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

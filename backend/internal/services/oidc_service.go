@@ -20,12 +20,12 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/singleflight"
 
-	"github.com/getarcaneapp/arcane/backend/internal/common"
-	"github.com/getarcaneapp/arcane/backend/internal/config"
-	"github.com/getarcaneapp/arcane/backend/internal/models"
-	"github.com/getarcaneapp/arcane/backend/pkg/utils"
-	"github.com/getarcaneapp/arcane/backend/pkg/utils/jwtclaims"
-	"github.com/getarcaneapp/arcane/types/auth"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/common"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/config"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils/jwtclaims"
+	"github.com/getarcaneapp/arcane/types/v2/auth"
 )
 
 type OidcService struct {

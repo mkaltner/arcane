@@ -8,14 +8,14 @@ import (
 	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
-	humamw "github.com/getarcaneapp/arcane/backend/api/middleware"
-	"github.com/getarcaneapp/arcane/backend/internal/common"
-	"github.com/getarcaneapp/arcane/backend/internal/config"
-	"github.com/getarcaneapp/arcane/backend/internal/services"
-	"github.com/getarcaneapp/arcane/backend/pkg/authz"
-	pkgutils "github.com/getarcaneapp/arcane/backend/pkg/utils"
-	"github.com/getarcaneapp/arcane/types/base"
-	"github.com/getarcaneapp/arcane/types/event"
+	humamw "github.com/getarcaneapp/arcane/backend/v2/api/middleware"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/common"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/config"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/services"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/authz"
+	pkgutils "github.com/getarcaneapp/arcane/backend/v2/pkg/utils"
+	"github.com/getarcaneapp/arcane/types/v2/base"
+	"github.com/getarcaneapp/arcane/types/v2/event"
 	"github.com/labstack/echo/v4"
 )
 

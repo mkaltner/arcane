@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/getarcaneapp/arcane/backend/internal/config"
-	"github.com/getarcaneapp/arcane/types/jobschedule"
-	schedulertypes "github.com/getarcaneapp/arcane/types/scheduler"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/config"
+	"github.com/getarcaneapp/arcane/types/v2/jobschedule"
+	schedulertypes "github.com/getarcaneapp/arcane/types/v2/scheduler"
 	"github.com/stretchr/testify/require"
 )
 

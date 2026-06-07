@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/getarcaneapp/arcane/backend/pkg/remenv"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/remenv"
 	"github.com/labstack/echo/v4"
 )
 

@@ -3,7 +3,7 @@ package auth
 import (
 	"time"
 
-	"github.com/getarcaneapp/arcane/types/user"
+	"github.com/getarcaneapp/arcane/types/v2/user"
 )
 
 // Login represents the login request body.

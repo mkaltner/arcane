@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/compose-spec/compose-go/v2/dotenv"
-	"github.com/getarcaneapp/arcane/backend/pkg/utils/cache"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils/cache"
 )
 
 const (

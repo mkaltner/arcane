@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	humav2 "github.com/danielgtaylor/huma/v2"
-	basetypes "github.com/getarcaneapp/arcane/types/base"
-	envtypes "github.com/getarcaneapp/arcane/types/env"
-	imagetypes "github.com/getarcaneapp/arcane/types/image"
-	volumetypes "github.com/getarcaneapp/arcane/types/volume"
+	basetypes "github.com/getarcaneapp/arcane/types/v2/base"
+	envtypes "github.com/getarcaneapp/arcane/types/v2/env"
+	imagetypes "github.com/getarcaneapp/arcane/types/v2/image"
+	volumetypes "github.com/getarcaneapp/arcane/types/v2/volume"
 	dockernetwork "github.com/moby/moby/api/types/network"
 )
 

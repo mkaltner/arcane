@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/getarcaneapp/arcane/backend/internal/common"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/common"
 	libupdater "github.com/getarcaneapp/updater/pkg/labels"
 	containertypes "github.com/moby/moby/api/types/container"
 	mounttypes "github.com/moby/moby/api/types/mount"

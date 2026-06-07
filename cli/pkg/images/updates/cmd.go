@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/getarcaneapp/arcane/cli/internal/client"
-	"github.com/getarcaneapp/arcane/cli/internal/output"
-	"github.com/getarcaneapp/arcane/cli/internal/types"
-	"github.com/getarcaneapp/arcane/types/base"
-	"github.com/getarcaneapp/arcane/types/imageupdate"
+	"github.com/getarcaneapp/arcane/cli/v2/internal/client"
+	"github.com/getarcaneapp/arcane/cli/v2/internal/output"
+	"github.com/getarcaneapp/arcane/cli/v2/internal/types"
+	"github.com/getarcaneapp/arcane/types/v2/base"
+	"github.com/getarcaneapp/arcane/types/v2/imageupdate"
 	"github.com/spf13/cobra"
 )
 

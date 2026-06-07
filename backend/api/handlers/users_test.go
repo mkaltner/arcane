@@ -6,15 +6,15 @@ import (
 	"testing"
 
 	"github.com/danielgtaylor/huma/v2"
-	humamw "github.com/getarcaneapp/arcane/backend/api/middleware"
-	"github.com/getarcaneapp/arcane/backend/internal/models"
-	"github.com/getarcaneapp/arcane/backend/internal/services"
-	"github.com/getarcaneapp/arcane/backend/pkg/authz"
+	humamw "github.com/getarcaneapp/arcane/backend/v2/api/middleware"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/services"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/authz"
 	glsqlite "github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 
-	"github.com/getarcaneapp/arcane/backend/internal/database"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/database"
 )
 
 func setupUserHandlerTestDB(t *testing.T) *database.DB {

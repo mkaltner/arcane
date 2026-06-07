@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	docker "github.com/getarcaneapp/arcane/backend/pkg/dockerutil"
-	imagetypes "github.com/getarcaneapp/arcane/types/image"
+	docker "github.com/getarcaneapp/arcane/backend/v2/pkg/dockerutil"
+	imagetypes "github.com/getarcaneapp/arcane/types/v2/image"
 	buildkitclient "github.com/moby/buildkit/client"
 )
 

@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/getarcaneapp/arcane/backend/pkg/projects"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/projects"
 )
 
 type Watcher struct {

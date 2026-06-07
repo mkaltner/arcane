@@ -8,15 +8,15 @@ import (
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
-	humamw "github.com/getarcaneapp/arcane/backend/api/middleware"
-	"github.com/getarcaneapp/arcane/backend/internal/common"
-	"github.com/getarcaneapp/arcane/backend/internal/config"
-	"github.com/getarcaneapp/arcane/backend/internal/models"
-	"github.com/getarcaneapp/arcane/backend/internal/services"
-	"github.com/getarcaneapp/arcane/backend/pkg/utils/cookie"
-	httputils "github.com/getarcaneapp/arcane/backend/pkg/utils/httpx"
-	"github.com/getarcaneapp/arcane/types/auth"
-	roletypes "github.com/getarcaneapp/arcane/types/role"
+	humamw "github.com/getarcaneapp/arcane/backend/v2/api/middleware"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/common"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/config"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/services"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils/cookie"
+	httputils "github.com/getarcaneapp/arcane/backend/v2/pkg/utils/httpx"
+	"github.com/getarcaneapp/arcane/types/v2/auth"
+	roletypes "github.com/getarcaneapp/arcane/types/v2/role"
 )
 
 // OidcHandler handles OIDC authentication endpoints, plus OIDC group → role

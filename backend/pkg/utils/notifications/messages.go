@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/getarcaneapp/arcane/types/imageupdate"
-	"github.com/getarcaneapp/arcane/types/system"
+	"github.com/getarcaneapp/arcane/types/v2/imageupdate"
+	"github.com/getarcaneapp/arcane/types/v2/system"
 )
 
 type MessageFormat string

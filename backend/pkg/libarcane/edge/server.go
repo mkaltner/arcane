@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	tunnelpb "github.com/getarcaneapp/arcane/backend/pkg/libarcane/edge/proto/tunnel/v1"
-	"github.com/getarcaneapp/arcane/backend/pkg/remenv"
+	tunnelpb "github.com/getarcaneapp/arcane/backend/v2/pkg/libarcane/edge/proto/tunnel/v1"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/remenv"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"

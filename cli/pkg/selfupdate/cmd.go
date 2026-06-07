@@ -19,8 +19,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/getarcaneapp/arcane/cli/internal/config"
-	"github.com/getarcaneapp/arcane/cli/internal/output"
+	"github.com/getarcaneapp/arcane/cli/v2/internal/config"
+	"github.com/getarcaneapp/arcane/cli/v2/internal/output"
 	"github.com/spf13/cobra"
 )
 

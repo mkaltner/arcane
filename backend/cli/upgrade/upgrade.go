@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	docker "github.com/getarcaneapp/arcane/backend/pkg/dockerutil"
-	"github.com/getarcaneapp/arcane/backend/pkg/libarcane"
+	docker "github.com/getarcaneapp/arcane/backend/v2/pkg/dockerutil"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/libarcane"
 	updaterlabels "github.com/getarcaneapp/updater/pkg/labels"
 	updaterlogs "github.com/getarcaneapp/updater/pkg/logs"
 	"github.com/moby/moby/api/types/container"

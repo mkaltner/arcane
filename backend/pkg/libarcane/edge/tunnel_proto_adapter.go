@@ -6,7 +6,7 @@ import (
 	"maps"
 	"math"
 
-	tunnelpb "github.com/getarcaneapp/arcane/backend/pkg/libarcane/edge/proto/tunnel/v1"
+	tunnelpb "github.com/getarcaneapp/arcane/backend/v2/pkg/libarcane/edge/proto/tunnel/v1"
 )
 
 func tunnelMessageToManagerProto(msg *TunnelMessage) (*tunnelpb.ManagerMessage, error) {

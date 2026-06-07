@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	dockerutils "github.com/getarcaneapp/arcane/backend/pkg/dockerutil"
-	imagetypes "github.com/getarcaneapp/arcane/types/image"
+	dockerutils "github.com/getarcaneapp/arcane/backend/v2/pkg/dockerutil"
+	imagetypes "github.com/getarcaneapp/arcane/types/v2/image"
 	buildkit "github.com/moby/buildkit/client"
 )
 

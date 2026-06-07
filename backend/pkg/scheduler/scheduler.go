@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	schedulertypes "github.com/getarcaneapp/arcane/types/scheduler"
+	schedulertypes "github.com/getarcaneapp/arcane/types/v2/scheduler"
 	"github.com/robfig/cron/v3"
 )
 

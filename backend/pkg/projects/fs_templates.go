@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	pkgutils "github.com/getarcaneapp/arcane/backend/pkg/utils"
+	pkgutils "github.com/getarcaneapp/arcane/backend/v2/pkg/utils"
 )
 
 func ReadFolderComposeTemplate(baseDir, folder string) (string, *string, string, bool, error) {

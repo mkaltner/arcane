@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	systemtypes "github.com/getarcaneapp/arcane/types/system"
+	systemtypes "github.com/getarcaneapp/arcane/types/v2/system"
 )
 
 func ParseTokens(tokens []string, result *systemtypes.DockerRunCommand) error {

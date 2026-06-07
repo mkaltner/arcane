@@ -11,12 +11,12 @@ import (
 	"time"
 
 	"github.com/charmbracelet/x/term"
-	"github.com/getarcaneapp/arcane/cli/internal/cmdutil"
-	"github.com/getarcaneapp/arcane/cli/internal/config"
-	"github.com/getarcaneapp/arcane/cli/internal/output"
-	"github.com/getarcaneapp/arcane/cli/internal/types"
-	"github.com/getarcaneapp/arcane/types/auth"
-	"github.com/getarcaneapp/arcane/types/base"
+	"github.com/getarcaneapp/arcane/cli/v2/internal/cmdutil"
+	"github.com/getarcaneapp/arcane/cli/v2/internal/config"
+	"github.com/getarcaneapp/arcane/cli/v2/internal/output"
+	"github.com/getarcaneapp/arcane/cli/v2/internal/types"
+	"github.com/getarcaneapp/arcane/types/v2/auth"
+	"github.com/getarcaneapp/arcane/types/v2/base"
 	"github.com/spf13/cobra"
 )
 

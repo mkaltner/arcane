@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/getarcaneapp/arcane/cli/internal/config"
-	clitypes "github.com/getarcaneapp/arcane/cli/internal/types"
+	"github.com/getarcaneapp/arcane/cli/v2/internal/config"
+	clitypes "github.com/getarcaneapp/arcane/cli/v2/internal/types"
 	"github.com/spf13/cobra"
 )
 

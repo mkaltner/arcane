@@ -19,15 +19,15 @@ import (
 	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
 
-	"github.com/getarcaneapp/arcane/backend/internal/common"
-	"github.com/getarcaneapp/arcane/backend/internal/database"
-	"github.com/getarcaneapp/arcane/backend/internal/models"
-	"github.com/getarcaneapp/arcane/backend/pkg/pagination"
-	pkgutils "github.com/getarcaneapp/arcane/backend/pkg/utils"
-	"github.com/getarcaneapp/arcane/backend/pkg/utils/dbutil"
-	"github.com/getarcaneapp/arcane/backend/pkg/utils/httpx"
-	"github.com/getarcaneapp/arcane/backend/pkg/utils/jwtclaims"
-	federatedtypes "github.com/getarcaneapp/arcane/types/federated"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/common"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/database"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/pagination"
+	pkgutils "github.com/getarcaneapp/arcane/backend/v2/pkg/utils"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils/dbutil"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils/httpx"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils/jwtclaims"
+	federatedtypes "github.com/getarcaneapp/arcane/types/v2/federated"
 )
 
 const (

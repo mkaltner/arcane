@@ -17,7 +17,7 @@
 //
 // Version and Revision variables are set at build time via ldflags:
 //
-//	go build -ldflags "-X github.com/getarcaneapp/arcane/cli/internal/config.Version=1.0.0"
+//	go build -ldflags "-X github.com/getarcaneapp/arcane/cli/v2/internal/config.Version=1.0.0"
 package config
 
 import (
@@ -28,7 +28,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/getarcaneapp/arcane/cli/internal/types"
+	"github.com/getarcaneapp/arcane/cli/v2/internal/types"
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/spf13/viper"
 )

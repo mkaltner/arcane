@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/getarcaneapp/arcane/types/containerregistry"
-	"github.com/getarcaneapp/arcane/types/vulnerability"
+	"github.com/getarcaneapp/arcane/types/v2/containerregistry"
+	"github.com/getarcaneapp/arcane/types/v2/vulnerability"
 	"github.com/moby/moby/api/types/image"
 )
 

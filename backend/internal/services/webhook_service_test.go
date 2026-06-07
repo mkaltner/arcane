@@ -9,14 +9,14 @@ import (
 	"strings"
 	"testing"
 
-	libcrypto "github.com/getarcaneapp/arcane/backend/pkg/libarcane/crypto"
+	libcrypto "github.com/getarcaneapp/arcane/backend/v2/pkg/libarcane/crypto"
 	glsqlite "github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 
-	"github.com/getarcaneapp/arcane/backend/internal/database"
-	"github.com/getarcaneapp/arcane/backend/internal/models"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/database"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
 )
 
 // setupWebhookServiceTestDB creates an isolated in-memory SQLite DB for each test.

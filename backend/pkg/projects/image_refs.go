@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	composetypes "github.com/compose-spec/compose-go/v2/types"
-	projecttypes "github.com/getarcaneapp/arcane/types/project"
+	projecttypes "github.com/getarcaneapp/arcane/types/v2/project"
 )
 
 // ImageRefsFromComposeServices returns unique, non-empty image references from

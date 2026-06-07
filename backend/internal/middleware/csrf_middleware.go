@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/getarcaneapp/arcane/backend/internal/config"
-	"github.com/getarcaneapp/arcane/backend/internal/models"
-	pkgutils "github.com/getarcaneapp/arcane/backend/pkg/utils"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/config"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
+	pkgutils "github.com/getarcaneapp/arcane/backend/v2/pkg/utils"
 	"github.com/labstack/echo/v4"
 )
 

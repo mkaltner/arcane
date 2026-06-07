@@ -13,7 +13,7 @@ import (
 
 	"log/slog"
 
-	volumetypes "github.com/getarcaneapp/arcane/types/volume"
+	volumetypes "github.com/getarcaneapp/arcane/types/v2/volume"
 )
 
 const defaultBuildsDirectory = "/builds"

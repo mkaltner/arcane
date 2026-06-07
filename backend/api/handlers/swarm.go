@@ -9,16 +9,16 @@ import (
 
 	"github.com/containerd/errdefs"
 	"github.com/danielgtaylor/huma/v2"
-	humamw "github.com/getarcaneapp/arcane/backend/api/middleware"
-	"github.com/getarcaneapp/arcane/backend/internal/common"
-	"github.com/getarcaneapp/arcane/backend/internal/config"
-	"github.com/getarcaneapp/arcane/backend/internal/models"
-	"github.com/getarcaneapp/arcane/backend/internal/services"
-	"github.com/getarcaneapp/arcane/backend/pkg/authz"
-	"github.com/getarcaneapp/arcane/backend/pkg/libarcane/edge"
-	"github.com/getarcaneapp/arcane/backend/pkg/pagination"
-	"github.com/getarcaneapp/arcane/types/base"
-	swarmtypes "github.com/getarcaneapp/arcane/types/swarm"
+	humamw "github.com/getarcaneapp/arcane/backend/v2/api/middleware"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/common"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/config"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/services"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/authz"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/libarcane/edge"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/pagination"
+	"github.com/getarcaneapp/arcane/types/v2/base"
+	swarmtypes "github.com/getarcaneapp/arcane/types/v2/swarm"
 )
 
 type SwarmHandler struct {

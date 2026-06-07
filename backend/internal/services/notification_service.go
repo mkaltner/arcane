@@ -14,15 +14,15 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/getarcaneapp/arcane/backend/internal/config"
-	"github.com/getarcaneapp/arcane/backend/internal/database"
-	"github.com/getarcaneapp/arcane/backend/internal/models"
-	"github.com/getarcaneapp/arcane/backend/pkg/libarcane/crypto"
-	"github.com/getarcaneapp/arcane/backend/pkg/utils/notifications"
-	"github.com/getarcaneapp/arcane/backend/resources"
-	"github.com/getarcaneapp/arcane/types/imageupdate"
-	notificationdto "github.com/getarcaneapp/arcane/types/notification"
-	"github.com/getarcaneapp/arcane/types/system"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/config"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/database"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/libarcane/crypto"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils/notifications"
+	"github.com/getarcaneapp/arcane/backend/v2/resources"
+	"github.com/getarcaneapp/arcane/types/v2/imageupdate"
+	notificationdto "github.com/getarcaneapp/arcane/types/v2/notification"
+	"github.com/getarcaneapp/arcane/types/v2/system"
 )
 
 const (

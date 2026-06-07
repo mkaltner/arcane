@@ -12,16 +12,16 @@ import (
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 	slogecho "github.com/samber/slog-echo"
 
-	"github.com/getarcaneapp/arcane/backend/api"
-	"github.com/getarcaneapp/arcane/backend/api/handlers"
-	"github.com/getarcaneapp/arcane/backend/api/ws"
-	"github.com/getarcaneapp/arcane/backend/frontend"
-	"github.com/getarcaneapp/arcane/backend/internal/config"
-	"github.com/getarcaneapp/arcane/backend/internal/di"
-	"github.com/getarcaneapp/arcane/backend/internal/middleware"
-	"github.com/getarcaneapp/arcane/backend/pkg/libarcane/edge"
-	"github.com/getarcaneapp/arcane/backend/pkg/utils/cookie"
-	"github.com/getarcaneapp/arcane/types"
+	"github.com/getarcaneapp/arcane/backend/v2/api"
+	"github.com/getarcaneapp/arcane/backend/v2/api/handlers"
+	"github.com/getarcaneapp/arcane/backend/v2/api/ws"
+	"github.com/getarcaneapp/arcane/backend/v2/frontend"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/config"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/di"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/middleware"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/libarcane/edge"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils/cookie"
+	"github.com/getarcaneapp/arcane/types/v2"
 )
 
 var (

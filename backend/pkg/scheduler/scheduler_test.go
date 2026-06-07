@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	schedulertypes "github.com/getarcaneapp/arcane/types/scheduler"
+	schedulertypes "github.com/getarcaneapp/arcane/types/v2/scheduler"
 	"github.com/stretchr/testify/require"
 )
 

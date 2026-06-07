@@ -11,13 +11,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/getarcaneapp/arcane/cli/internal/ci"
-	"github.com/getarcaneapp/arcane/cli/internal/client"
-	"github.com/getarcaneapp/arcane/cli/internal/cmdutil"
-	"github.com/getarcaneapp/arcane/cli/internal/config"
-	"github.com/getarcaneapp/arcane/cli/internal/output"
-	"github.com/getarcaneapp/arcane/cli/internal/types"
-	federatedtypes "github.com/getarcaneapp/arcane/types/federated"
+	"github.com/getarcaneapp/arcane/cli/v2/internal/ci"
+	"github.com/getarcaneapp/arcane/cli/v2/internal/client"
+	"github.com/getarcaneapp/arcane/cli/v2/internal/cmdutil"
+	"github.com/getarcaneapp/arcane/cli/v2/internal/config"
+	"github.com/getarcaneapp/arcane/cli/v2/internal/output"
+	"github.com/getarcaneapp/arcane/cli/v2/internal/types"
+	federatedtypes "github.com/getarcaneapp/arcane/types/v2/federated"
 	"github.com/spf13/cobra"
 )
 

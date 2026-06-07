@@ -1,4 +1,4 @@
-module github.com/getarcaneapp/arcane/cli
+module github.com/getarcaneapp/arcane/cli/v2
 
 go 1.26.4
 
@@ -10,7 +10,7 @@ require (
 	charm.land/log/v2 v2.0.0
 	github.com/charmbracelet/x/term v0.2.2
 	github.com/fatih/color v1.19.0
-	github.com/getarcaneapp/arcane/types v1.19.5
+	github.com/getarcaneapp/arcane/types/v2 v2.0.0
 	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/mattn/go-runewidth v0.0.23
 	github.com/spf13/cobra v1.10.2

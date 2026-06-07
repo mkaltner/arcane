@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/getarcaneapp/arcane/backend/internal/models"
-	"github.com/getarcaneapp/arcane/backend/internal/services"
-	"github.com/getarcaneapp/arcane/backend/pkg/authz"
-	"github.com/getarcaneapp/arcane/backend/pkg/libarcane/edge"
-	envtypes "github.com/getarcaneapp/arcane/types/environment"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/services"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/authz"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/libarcane/edge"
+	envtypes "github.com/getarcaneapp/arcane/types/v2/environment"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

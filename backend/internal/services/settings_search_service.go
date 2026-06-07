@@ -6,11 +6,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/getarcaneapp/arcane/backend/internal/models"
-	"github.com/getarcaneapp/arcane/backend/pkg/utils"
-	"github.com/getarcaneapp/arcane/types/category"
-	"github.com/getarcaneapp/arcane/types/meta"
-	"github.com/getarcaneapp/arcane/types/search"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils"
+	"github.com/getarcaneapp/arcane/types/v2/category"
+	"github.com/getarcaneapp/arcane/types/v2/meta"
+	"github.com/getarcaneapp/arcane/types/v2/search"
 )
 
 type SettingsSearchService struct {

@@ -11,12 +11,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/getarcaneapp/arcane/backend/internal/database"
-	"github.com/getarcaneapp/arcane/backend/internal/models"
-	activitylib "github.com/getarcaneapp/arcane/backend/pkg/libarcane/activity"
-	"github.com/getarcaneapp/arcane/backend/pkg/pagination"
-	"github.com/getarcaneapp/arcane/backend/pkg/utils"
-	activitytypes "github.com/getarcaneapp/arcane/types/activity"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/database"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
+	activitylib "github.com/getarcaneapp/arcane/backend/v2/pkg/libarcane/activity"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/pagination"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils"
+	activitytypes "github.com/getarcaneapp/arcane/types/v2/activity"
 	"gorm.io/gorm"
 )
 

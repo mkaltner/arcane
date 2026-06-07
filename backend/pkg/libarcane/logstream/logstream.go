@@ -11,7 +11,7 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/getarcaneapp/arcane/types/system"
+	"github.com/getarcaneapp/arcane/types/v2/system"
 )
 
 // defaultRingCapacity is the number of recent log entries retained in memory.

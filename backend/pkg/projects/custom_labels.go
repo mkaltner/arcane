@@ -11,8 +11,8 @@ import (
 
 	"github.com/compose-spec/compose-go/v2/loader"
 	composetypes "github.com/compose-spec/compose-go/v2/types"
-	"github.com/getarcaneapp/arcane/backend/pkg/utils"
-	"github.com/getarcaneapp/arcane/backend/pkg/utils/iconcatalog"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils/iconcatalog"
 	"github.com/goccy/go-yaml"
 )
 

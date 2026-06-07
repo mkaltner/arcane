@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	pkgutils "github.com/getarcaneapp/arcane/backend/pkg/utils"
+	pkgutils "github.com/getarcaneapp/arcane/backend/v2/pkg/utils"
 	"github.com/goccy/go-yaml"
 )
 

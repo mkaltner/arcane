@@ -11,9 +11,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/getarcaneapp/arcane/backend/internal/config"
-	pkgutils "github.com/getarcaneapp/arcane/backend/pkg/utils"
-	"github.com/getarcaneapp/arcane/types/project"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/config"
+	pkgutils "github.com/getarcaneapp/arcane/backend/v2/pkg/utils"
+	"github.com/getarcaneapp/arcane/types/v2/project"
 	"github.com/goccy/go-yaml"
 )
 

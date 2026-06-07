@@ -5,7 +5,7 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/getarcaneapp/arcane/types/system"
+	"github.com/getarcaneapp/arcane/types/v2/system"
 )
 
 // recentGCPauseSamples is the number of recent GC pause durations reported.

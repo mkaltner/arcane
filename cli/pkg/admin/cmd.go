@@ -1,12 +1,12 @@
 package admin
 
 import (
-	"github.com/getarcaneapp/arcane/cli/pkg/admin/apikeys"
-	"github.com/getarcaneapp/arcane/cli/pkg/admin/events"
-	"github.com/getarcaneapp/arcane/cli/pkg/admin/notifications"
-	"github.com/getarcaneapp/arcane/cli/pkg/admin/oidcmappings"
-	"github.com/getarcaneapp/arcane/cli/pkg/admin/roles"
-	"github.com/getarcaneapp/arcane/cli/pkg/admin/users"
+	"github.com/getarcaneapp/arcane/cli/v2/pkg/admin/apikeys"
+	"github.com/getarcaneapp/arcane/cli/v2/pkg/admin/events"
+	"github.com/getarcaneapp/arcane/cli/v2/pkg/admin/notifications"
+	"github.com/getarcaneapp/arcane/cli/v2/pkg/admin/oidcmappings"
+	"github.com/getarcaneapp/arcane/cli/v2/pkg/admin/roles"
+	"github.com/getarcaneapp/arcane/cli/v2/pkg/admin/users"
 	"github.com/spf13/cobra"
 )
 

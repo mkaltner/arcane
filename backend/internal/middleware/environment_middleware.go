@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/getarcaneapp/arcane/backend/internal/common"
-	"github.com/getarcaneapp/arcane/backend/pkg/libarcane/edge"
-	wsutil "github.com/getarcaneapp/arcane/backend/pkg/libarcane/ws"
-	httputils "github.com/getarcaneapp/arcane/backend/pkg/utils/httpx"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/common"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/libarcane/edge"
+	wsutil "github.com/getarcaneapp/arcane/backend/v2/pkg/libarcane/ws"
+	httputils "github.com/getarcaneapp/arcane/backend/v2/pkg/utils/httpx"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 )

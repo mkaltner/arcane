@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/getarcaneapp/arcane/backend/pkg/utils/cookie"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils/cookie"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )

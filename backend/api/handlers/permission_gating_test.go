@@ -6,8 +6,8 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humaecho"
-	humamw "github.com/getarcaneapp/arcane/backend/api/middleware"
-	"github.com/getarcaneapp/arcane/backend/pkg/authz"
+	humamw "github.com/getarcaneapp/arcane/backend/v2/api/middleware"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/authz"
 	"github.com/labstack/echo/v4"
 )
 

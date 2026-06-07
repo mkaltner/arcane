@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/getarcaneapp/arcane/backend/internal/common"
-	"github.com/getarcaneapp/arcane/backend/internal/config"
-	"github.com/getarcaneapp/arcane/backend/internal/models"
-	"github.com/getarcaneapp/arcane/backend/pkg/utils/cache"
-	"github.com/getarcaneapp/arcane/backend/pkg/utils/jwtclaims"
-	"github.com/getarcaneapp/arcane/types/auth"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/common"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/config"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils/cache"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils/jwtclaims"
+	"github.com/getarcaneapp/arcane/types/v2/auth"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )

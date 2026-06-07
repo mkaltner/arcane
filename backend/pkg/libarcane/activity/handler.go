@@ -9,8 +9,8 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/getarcaneapp/arcane/backend/internal/models"
-	"github.com/getarcaneapp/arcane/backend/pkg/utils"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils"
 )
 
 // ErrCanceled is the cancellation cause set on an activity's work context when a

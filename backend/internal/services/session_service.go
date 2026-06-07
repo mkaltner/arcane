@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/getarcaneapp/arcane/backend/internal/database"
-	"github.com/getarcaneapp/arcane/backend/internal/models"
-	pkgutils "github.com/getarcaneapp/arcane/backend/pkg/utils"
-	"github.com/getarcaneapp/arcane/backend/pkg/utils/dbutil"
-	"github.com/getarcaneapp/arcane/types/auth"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/database"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
+	pkgutils "github.com/getarcaneapp/arcane/backend/v2/pkg/utils"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils/dbutil"
+	"github.com/getarcaneapp/arcane/types/v2/auth"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )

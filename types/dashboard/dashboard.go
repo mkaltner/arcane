@@ -1,10 +1,10 @@
 package dashboard
 
 import (
-	"github.com/getarcaneapp/arcane/types/base"
-	containertypes "github.com/getarcaneapp/arcane/types/container"
-	imagetypes "github.com/getarcaneapp/arcane/types/image"
-	versiontypes "github.com/getarcaneapp/arcane/types/version"
+	"github.com/getarcaneapp/arcane/types/v2/base"
+	containertypes "github.com/getarcaneapp/arcane/types/v2/container"
+	imagetypes "github.com/getarcaneapp/arcane/types/v2/image"
+	versiontypes "github.com/getarcaneapp/arcane/types/v2/version"
 	dockercontainer "github.com/moby/moby/api/types/container"
 	dockerimage "github.com/moby/moby/api/types/image"
 	dockernetwork "github.com/moby/moby/api/types/network"

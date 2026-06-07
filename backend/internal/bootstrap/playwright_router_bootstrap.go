@@ -5,9 +5,9 @@ package bootstrap
 import (
 	"log/slog"
 
-	"github.com/getarcaneapp/arcane/backend/api"
-	"github.com/getarcaneapp/arcane/backend/internal/di"
-	"github.com/getarcaneapp/arcane/backend/internal/services"
+	"github.com/getarcaneapp/arcane/backend/v2/api"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/di"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/services"
 	"github.com/labstack/echo/v4"
 )
 

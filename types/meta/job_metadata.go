@@ -3,7 +3,7 @@ package meta
 import (
 	"time"
 
-	"github.com/getarcaneapp/arcane/types/jobschedule"
+	"github.com/getarcaneapp/arcane/types/v2/jobschedule"
 )
 
 type JobMetadata struct {

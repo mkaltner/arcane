@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	systemtypes "github.com/getarcaneapp/arcane/types/system"
+	systemtypes "github.com/getarcaneapp/arcane/types/v2/system"
 )
 
 // AMDGPUSysfsPath is the sysfs base used to discover AMD GPUs.

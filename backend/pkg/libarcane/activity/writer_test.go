@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/getarcaneapp/arcane/backend/internal/models"
-	activitytypes "github.com/getarcaneapp/arcane/types/activity"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
+	activitytypes "github.com/getarcaneapp/arcane/types/v2/activity"
 	"github.com/stretchr/testify/require"
 )
 

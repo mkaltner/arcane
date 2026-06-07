@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"strings"
 
-	dockerutils "github.com/getarcaneapp/arcane/backend/pkg/dockerutil"
-	imagetypes "github.com/getarcaneapp/arcane/types/image"
+	dockerutils "github.com/getarcaneapp/arcane/backend/v2/pkg/dockerutil"
+	imagetypes "github.com/getarcaneapp/arcane/types/v2/image"
 	"github.com/moby/go-archive"
 	dockercontainer "github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/jsonstream"

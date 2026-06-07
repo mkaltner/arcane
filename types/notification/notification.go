@@ -1,9 +1,9 @@
 package notification
 
 import (
-	"github.com/getarcaneapp/arcane/types/base"
-	"github.com/getarcaneapp/arcane/types/imageupdate"
-	"github.com/getarcaneapp/arcane/types/system"
+	"github.com/getarcaneapp/arcane/types/v2/base"
+	"github.com/getarcaneapp/arcane/types/v2/imageupdate"
+	"github.com/getarcaneapp/arcane/types/v2/system"
 )
 
 // Provider is the type for notification provider identifiers.

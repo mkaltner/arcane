@@ -17,13 +17,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 
-	"github.com/getarcaneapp/arcane/backend/internal/common"
-	"github.com/getarcaneapp/arcane/backend/internal/database"
-	"github.com/getarcaneapp/arcane/backend/internal/models"
-	"github.com/getarcaneapp/arcane/backend/pkg/pagination"
-	httputils "github.com/getarcaneapp/arcane/backend/pkg/utils/httpx"
-	envtypes "github.com/getarcaneapp/arcane/types/env"
-	tmpl "github.com/getarcaneapp/arcane/types/template"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/common"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/database"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/pagination"
+	httputils "github.com/getarcaneapp/arcane/backend/v2/pkg/utils/httpx"
+	envtypes "github.com/getarcaneapp/arcane/types/v2/env"
+	tmpl "github.com/getarcaneapp/arcane/types/v2/template"
 )
 
 func setupTemplateServiceTestDB(t *testing.T) *database.DB {

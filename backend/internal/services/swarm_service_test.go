@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	cerrdefs "github.com/containerd/errdefs"
-	"github.com/getarcaneapp/arcane/backend/internal/models"
-	swarmtypes "github.com/getarcaneapp/arcane/types/swarm"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
+	swarmtypes "github.com/getarcaneapp/arcane/types/v2/swarm"
 	"github.com/moby/moby/api/types/swarm"
 	"github.com/moby/moby/api/types/system"
 	"github.com/stretchr/testify/require"

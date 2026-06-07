@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/getarcaneapp/arcane/backend/internal/database"
-	"github.com/getarcaneapp/arcane/backend/internal/models"
-	libcrypto "github.com/getarcaneapp/arcane/backend/pkg/libarcane/crypto"
-	"github.com/getarcaneapp/arcane/types/updater"
-	webhooktypes "github.com/getarcaneapp/arcane/types/webhook"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/database"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
+	libcrypto "github.com/getarcaneapp/arcane/backend/v2/pkg/libarcane/crypto"
+	"github.com/getarcaneapp/arcane/types/v2/updater"
+	webhooktypes "github.com/getarcaneapp/arcane/types/v2/webhook"
 	"gorm.io/gorm"
 )
 

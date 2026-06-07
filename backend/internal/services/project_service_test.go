@@ -20,15 +20,15 @@ import (
 
 	composetypes "github.com/compose-spec/compose-go/v2/types"
 	composeapi "github.com/docker/compose/v5/pkg/api"
-	"github.com/getarcaneapp/arcane/backend/internal/common"
-	"github.com/getarcaneapp/arcane/backend/internal/config"
-	"github.com/getarcaneapp/arcane/backend/pkg/pagination"
-	"github.com/getarcaneapp/arcane/backend/pkg/projects"
-	"github.com/getarcaneapp/arcane/backend/pkg/utils/iconcatalog"
-	buildtypes "github.com/getarcaneapp/arcane/types/builds"
-	"github.com/getarcaneapp/arcane/types/containerregistry"
-	imagetypes "github.com/getarcaneapp/arcane/types/image"
-	projecttypes "github.com/getarcaneapp/arcane/types/project"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/common"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/config"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/pagination"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/projects"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils/iconcatalog"
+	buildtypes "github.com/getarcaneapp/arcane/types/v2/builds"
+	"github.com/getarcaneapp/arcane/types/v2/containerregistry"
+	imagetypes "github.com/getarcaneapp/arcane/types/v2/image"
+	projecttypes "github.com/getarcaneapp/arcane/types/v2/project"
 	libupdater "github.com/getarcaneapp/updater/pkg/labels"
 	glsqlite "github.com/glebarez/sqlite"
 	"github.com/moby/moby/api/types/container"
@@ -38,8 +38,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 
-	"github.com/getarcaneapp/arcane/backend/internal/database"
-	"github.com/getarcaneapp/arcane/backend/internal/models"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/database"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
 )
 
 func TestWriteProjectProgressInternal_SuppressedContextSkipsProgress(t *testing.T) {

@@ -12,10 +12,10 @@ import (
 
 	"github.com/google/wire"
 
-	"github.com/getarcaneapp/arcane/backend/internal/config"
-	"github.com/getarcaneapp/arcane/backend/internal/database"
-	"github.com/getarcaneapp/arcane/backend/internal/services"
-	pkg_scheduler "github.com/getarcaneapp/arcane/backend/pkg/scheduler"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/config"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/database"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/services"
+	pkg_scheduler "github.com/getarcaneapp/arcane/backend/v2/pkg/scheduler"
 )
 
 // ServiceSet is the single, central provider set for the whole backend. Every

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/getarcaneapp/arcane/backend/internal/common"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/common"
 )
 
 type LookupIPFunc func(ctx context.Context, host string) ([]net.IP, error)

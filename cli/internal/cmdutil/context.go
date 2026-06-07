@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/getarcaneapp/arcane/cli/internal/client"
-	runtimectx "github.com/getarcaneapp/arcane/cli/internal/runtime"
+	"github.com/getarcaneapp/arcane/cli/v2/internal/client"
+	runtimectx "github.com/getarcaneapp/arcane/cli/v2/internal/runtime"
 	"github.com/spf13/cobra"
 )
 

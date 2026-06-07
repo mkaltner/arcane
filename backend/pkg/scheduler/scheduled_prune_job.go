@@ -4,8 +4,8 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/getarcaneapp/arcane/backend/internal/services"
-	"github.com/getarcaneapp/arcane/types/system"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/services"
+	"github.com/getarcaneapp/arcane/types/v2/system"
 	"github.com/robfig/cron/v3"
 )
 

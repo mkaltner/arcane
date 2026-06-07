@@ -8,15 +8,15 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humaecho"
-	"github.com/getarcaneapp/arcane/backend/api/handlers"
-	"github.com/getarcaneapp/arcane/backend/api/middleware"
-	"github.com/getarcaneapp/arcane/backend/internal/config"
-	"github.com/getarcaneapp/arcane/backend/internal/di"
+	"github.com/getarcaneapp/arcane/backend/v2/api/handlers"
+	"github.com/getarcaneapp/arcane/backend/v2/api/middleware"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/config"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/di"
 	"github.com/labstack/echo/v4"
 )
 
 const (
-	arcaneTypesPrefix = "github.com/getarcaneapp/arcane/types/"
+	arcaneTypesPrefix = "github.com/getarcaneapp/arcane/types/v2/"
 	dockerSDKPrefix   = "github.com/moby/moby"
 )
 
@@ -37,7 +37,7 @@ var dockerSchemaPrefixes = map[string]string{
 }
 
 // customSchemaNamer creates unique schema names using package prefix for types
-// from github.com/getarcaneapp/arcane/types to avoid conflicts between packages that have
+// from github.com/getarcaneapp/arcane/types/v2 to avoid conflicts between packages that have
 // types with the same name (e.g., image.Summary vs env.Summary).
 func customSchemaNamer(t reflect.Type, hint string) string {
 	name := huma.DefaultSchemaNamer(t, hint)

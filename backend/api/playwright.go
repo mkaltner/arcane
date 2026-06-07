@@ -5,7 +5,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/getarcaneapp/arcane/backend/internal/services"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/services"
 	"github.com/labstack/echo/v4"
 )
 

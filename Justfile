@@ -227,9 +227,9 @@ _test-backend:
     cd backend
     if [ -n "${GO_JUNIT_REPORT_FILE:-}" ]; then
         mkdir -p "$(dirname "$GO_JUNIT_REPORT_FILE")"
-        go test -json -tags=exclude_frontend,buildables -ldflags "-X github.com/getarcaneapp/arcane/backend/buildables.EnabledFeatures=autologin" ./... -race -coverprofile=coverage.txt -covermode=atomic -v 2>&1 | go run github.com/jstemmer/go-junit-report/v2@v2.1.0 -parser gojson -set-exit-code -out "$GO_JUNIT_REPORT_FILE"
+        go test -json -tags=exclude_frontend,buildables -ldflags "-X github.com/getarcaneapp/arcane/backend/v2/buildables.EnabledFeatures=autologin" ./... -race -coverprofile=coverage.txt -covermode=atomic -v 2>&1 | go run github.com/jstemmer/go-junit-report/v2@v2.1.0 -parser gojson -set-exit-code -out "$GO_JUNIT_REPORT_FILE"
     else
-        go test -tags=exclude_frontend,buildables -ldflags "-X github.com/getarcaneapp/arcane/backend/buildables.EnabledFeatures=autologin" ./... -race -coverprofile=coverage.txt -covermode=atomic -v
+        go test -tags=exclude_frontend,buildables -ldflags "-X github.com/getarcaneapp/arcane/backend/v2/buildables.EnabledFeatures=autologin" ./... -race -coverprofile=coverage.txt -covermode=atomic -v
     fi
 
 # Run CLI tests

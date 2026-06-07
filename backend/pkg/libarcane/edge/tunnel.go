@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	tunnelpb "github.com/getarcaneapp/arcane/backend/pkg/libarcane/edge/proto/tunnel/v1"
+	tunnelpb "github.com/getarcaneapp/arcane/backend/v2/pkg/libarcane/edge/proto/tunnel/v1"
 	"github.com/gorilla/websocket"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

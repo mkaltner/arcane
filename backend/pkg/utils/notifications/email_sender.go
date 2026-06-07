@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/getarcaneapp/arcane/backend/internal/models"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
 	"github.com/wneessen/go-mail"
 )
 

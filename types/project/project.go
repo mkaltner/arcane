@@ -4,7 +4,7 @@ import (
 	"time"
 
 	composetypes "github.com/compose-spec/compose-go/v2/types"
-	"github.com/getarcaneapp/arcane/types/containerregistry"
+	"github.com/getarcaneapp/arcane/types/v2/containerregistry"
 )
 
 // IncludeFile represents an included file within a project.

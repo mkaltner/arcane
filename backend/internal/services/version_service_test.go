@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/getarcaneapp/arcane/backend/internal/models"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/models"
 	libupdater "github.com/getarcaneapp/updater/pkg/labels"
 	"github.com/moby/moby/api/types/container"
 	dockertypesimage "github.com/moby/moby/api/types/image"

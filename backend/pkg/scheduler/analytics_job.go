@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v5"
-	"github.com/getarcaneapp/arcane/backend/internal/config"
-	"github.com/getarcaneapp/arcane/backend/internal/services"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/config"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/services"
 )
 
 const (

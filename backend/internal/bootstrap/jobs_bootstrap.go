@@ -6,10 +6,10 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/getarcaneapp/arcane/backend/internal/config"
-	"github.com/getarcaneapp/arcane/backend/internal/di"
-	"github.com/getarcaneapp/arcane/backend/pkg/libarcane"
-	pkg_scheduler "github.com/getarcaneapp/arcane/backend/pkg/scheduler"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/config"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/di"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/libarcane"
+	pkg_scheduler "github.com/getarcaneapp/arcane/backend/v2/pkg/scheduler"
 )
 
 func registerJobs(appCtx context.Context, newScheduler *pkg_scheduler.JobScheduler, appServices *di.Services, appConfig *config.Config) {

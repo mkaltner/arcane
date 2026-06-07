@@ -6,12 +6,12 @@ import (
 	"net/http/pprof"
 	"time"
 
-	"github.com/getarcaneapp/arcane/backend/internal/middleware"
-	"github.com/getarcaneapp/arcane/backend/internal/services"
-	"github.com/getarcaneapp/arcane/backend/pkg/authz"
-	"github.com/getarcaneapp/arcane/backend/pkg/libarcane/logstream"
-	wshub "github.com/getarcaneapp/arcane/backend/pkg/libarcane/ws"
-	systemtypes "github.com/getarcaneapp/arcane/types/system"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/middleware"
+	"github.com/getarcaneapp/arcane/backend/v2/internal/services"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/authz"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/libarcane/logstream"
+	wshub "github.com/getarcaneapp/arcane/backend/v2/pkg/libarcane/ws"
+	systemtypes "github.com/getarcaneapp/arcane/types/v2/system"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 )

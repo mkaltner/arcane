@@ -7,7 +7,7 @@ import (
 
 	composetypes "github.com/compose-spec/compose-go/v2/types"
 	"github.com/docker/compose/v5/pkg/api"
-	"github.com/getarcaneapp/arcane/backend/pkg/utils"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/utils"
 	"github.com/stretchr/testify/require"
 )
 

@@ -4,9 +4,9 @@ import (
 	"net/netip"
 	"testing"
 
-	"github.com/getarcaneapp/arcane/backend/pkg/pagination"
-	containertypes "github.com/getarcaneapp/arcane/types/container"
-	imagetypes "github.com/getarcaneapp/arcane/types/image"
+	"github.com/getarcaneapp/arcane/backend/v2/pkg/pagination"
+	containertypes "github.com/getarcaneapp/arcane/types/v2/container"
+	imagetypes "github.com/getarcaneapp/arcane/types/v2/image"
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/require"

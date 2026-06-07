@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/getarcaneapp/arcane/backend/buildables"
+	"github.com/getarcaneapp/arcane/backend/v2/buildables"
 )
 
 type RuntimeConfig struct {
