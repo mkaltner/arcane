@@ -257,6 +257,16 @@ publishers:
       --upload-file "{{ .ArtifactName }}"
       'https://pkgs.getarcane.app/repository/yum/{{- if eq .Arch "amd64" -}}x86_64{{- else if eq .Arch "arm64" -}}aarch64{{- else if eq .Arch "386" -}}i386{{- else if and (eq .Arch "arm") (eq .Arm "7") -}}armhfp{{- else -}}{{ .Arch }}{{- end -}}/{{ .ArtifactName }}'
 
+  - name: nexus-alpine
+    if: '{{ eq .ArtifactExt ".apk" }}'
+    disable: '{{ if not (and (index .Env "NEXUS_USERNAME") (index .Env "NEXUS_PASSWORD")) }}true{{ end }}'
+    dir: "{{ dir .ArtifactPath }}"
+    cmd: >-
+      curl --fail-with-body
+      -u "{{ .Env.NEXUS_USERNAME }}:{{ .Env.NEXUS_PASSWORD }}"
+      --upload-file "{{ .ArtifactName }}"
+      'https://pkgs.getarcane.app/repository/alpine/stable/main/{{- if eq .Arch "amd64" -}}x86_64{{- else if eq .Arch "arm64" -}}aarch64{{- else if eq .Arch "386" -}}x86{{- else if and (eq .Arch "arm") (eq .Arm "7") -}}armv7{{- else -}}{{ .Arch }}{{- end -}}/{{ .ArtifactName }}'
+
 homebrew_casks:
   - name: arcane-cli
     ids:
@@ -430,7 +440,6 @@ changelog:
 announce:
   discord:
     enabled: true
-    # Default: '{{ .ProjectName }} {{ .Tag }} is out! Check it out at {{ .ReleaseURL }}'.
     message_template: "Arcane version {{.Tag}} has been released! Checkout the changelog at {{ .ReleaseURL }}"
     author: "Github Actions"
     # Color code of the embed. You have to use decimal numeral system, not hexadecimal.
