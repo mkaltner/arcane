@@ -49,3 +49,14 @@ sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 ## Current app behavior
 
 The app launches a Compose placeholder home screen showing project status cards for UI, API/data, domain, and settings layers.
+
+## Verified locally
+
+This scaffold was verified on the headless Hermes machine after installing Android command-line tools under `$HOME/Android/Sdk`:
+
+```bash
+./gradlew clean assembleDebug
+./gradlew testDebugUnitTest lintDebug
+```
+
+Both commands completed successfully. Unit tests are currently `NO-SOURCE` because no test files have been added yet.
