@@ -30,6 +30,7 @@ Completed repo artifacts:
 - `mvp-spec.md` — first-version user flows, screens, safety policy, and acceptance criteria.
 - `implementation-plan.md` — recommended Android stack, project layout, milestones, and validation plan.
 - `handoff.md` — this file.
+- `../../clients/android/` — Kotlin + Jetpack Compose Android scaffold.
 
 ## Key decisions captured
 
@@ -45,12 +46,20 @@ Completed repo artifacts:
 
 ## Validation notes
 
-Documentation-only changes:
+Docs and Android scaffold verification:
 
-- No application tests were required for these docs-only commits.
 - Markdown was manually reviewed at write time for secrets and malformed token placeholders.
 - OpenAPI generation was not run because this machine does not currently have `go` installed.
 - API audit is source-derived from Arcane backend/frontend files and parsed Huma route registrations.
+- Local Android SDK command-line tools were installed under `$HOME/Android/Sdk` for verification.
+- `clients/android/` was verified with:
+
+  ```bash
+  ./gradlew clean assembleDebug
+  ./gradlew testDebugUnitTest lintDebug
+  ```
+
+- Both Gradle commands completed successfully. Unit tests were `NO-SOURCE` because no test files exist yet.
 
 Before submitting any Android code PR, follow Arcane `AI_POLICY.md`:
 
@@ -98,16 +107,15 @@ Recommended duplicate/older batch to archive or close after confirming no unique
 
 ## Suggested next implementation step
 
-Unblock/scaffold Android project using:
+The Android scaffold now exists at `clients/android/` with namespace `app.arcane.android` and Kotlin + Jetpack Compose.
 
-```text
-Directory: clients/android/
-Namespace: app.arcane.android
-Stack: Kotlin + Jetpack Compose
-Initial scope: app shell, connect/login placeholders, and README/setup notes
-```
+Next implementation step: replace scaffold placeholders with the connect/auth/environment vertical slice from `implementation-plan.md`:
 
-Then proceed with the API client vertical slice from `implementation-plan.md`.
+1. Server URL normalization and persistence.
+2. Auth repository for login/current-user/refresh/logout.
+3. Secure auth storage.
+4. Environment list/default selection.
+5. Home health/dashboard screen backed by real Arcane API responses.
 
 ## Notes for agents
 
