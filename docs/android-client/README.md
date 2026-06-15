@@ -16,6 +16,7 @@ Track research, product specs, implementation notes, and handoff material for bu
 - `api-audit.md` — Arcane API surface needed by an Android MVP.
 - `mvp-spec.md` — first-version Android user flows, navigation, and scope.
 - `implementation-plan.md` — Android project/package architecture and task breakdown.
+- `core-first-roadmap.md` — core-feature-first roadmap with Arcane look-and-feel and a later flesh-out phase.
 - `handoff.md` — validation checklist, known limitations, and follow-up backlog.
 
 ## Contribution / AI disclosure note
