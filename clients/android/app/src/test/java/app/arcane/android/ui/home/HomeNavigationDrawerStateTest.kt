@@ -22,8 +22,20 @@ class HomeNavigationDrawerStateTest {
             activityCount = 8,
         )
 
+        assertEquals("0", drawer.selectedEnvironmentId)
         assertEquals("v0idLab", drawer.environmentName)
         assertEquals("unix:///var/run/docker.sock", drawer.environmentSubtitle)
+        assertEquals(
+            listOf(
+                EnvironmentSelectorOption(
+                    id = "0",
+                    name = "v0idLab",
+                    subtitle = "unix:///var/run/docker.sock",
+                    selected = true,
+                ),
+            ),
+            drawer.environmentOptions,
+        )
         assertEquals(8, drawer.activityCount)
         assertEquals(
             listOf(

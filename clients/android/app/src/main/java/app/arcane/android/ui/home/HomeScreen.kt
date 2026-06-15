@@ -18,12 +18,20 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -35,6 +43,7 @@ import app.arcane.android.domain.model.ArcaneEnvironment
 import app.arcane.android.domain.model.ArcaneStatus
 import app.arcane.android.ui.theme.ArcaneColors
 import app.arcane.android.ui.theme.ArcaneTheme
+import kotlinx.coroutines.launch
 
 data class HomeDashboardSection(
     val name: String,
@@ -66,16 +75,46 @@ fun HomeScreen(
     onEnvironmentSelected: (String) -> Unit = {},
     onRetryEnvironments: () -> Unit = {},
 ) {
-    Scaffold(containerColor = ArcaneColors.Background) { innerPadding ->
-        when (uiState) {
-            HomeUiState.Loading -> LoadingContent(modifier = Modifier.padding(innerPadding))
-            is HomeUiState.Ready -> ReadyContent(
+    when (uiState) {
+        HomeUiState.Loading -> Scaffold(containerColor = ArcaneColors.Background) { innerPadding ->
+            LoadingContent(modifier = Modifier.padding(innerPadding))
+        }
+        is HomeUiState.Ready -> ReadyScaffold(
+            uiState = uiState,
+            onEnvironmentSelected = onEnvironmentSelected,
+            onRetryEnvironments = onRetryEnvironments,
+        )
+    }
+}
+
+@Composable
+private fun ReadyScaffold(
+    uiState: HomeUiState.Ready,
+    onEnvironmentSelected: (String) -> Unit,
+    onRetryEnvironments: () -> Unit,
+) {
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet(drawerContainerColor = ArcaneColors.Surface) {
+                NavigationDrawerContent(
+                    drawer = uiState.navigationDrawer,
+                    onEnvironmentSelected = { environmentId ->
+                        onEnvironmentSelected(environmentId)
+                        scope.launch { drawerState.close() }
+                    },
+                )
+            }
+        },
+    ) {
+        Scaffold(containerColor = ArcaneColors.Background) { innerPadding ->
+            ReadyContent(
                 status = uiState.status,
-                environments = uiState.environments,
                 operationalDashboard = uiState.operationalDashboard,
                 navigationDrawer = uiState.navigationDrawer,
-                onEnvironmentSelected = onEnvironmentSelected,
-                onRetryEnvironments = onRetryEnvironments,
+                onOpenDrawer = { scope.launch { drawerState.open() } },
                 modifier = Modifier.padding(innerPadding),
             )
         }
@@ -100,11 +139,9 @@ private fun LoadingContent(modifier: Modifier = Modifier) {
 @Composable
 private fun ReadyContent(
     status: ArcaneStatus,
-    environments: EnvironmentListUiState,
     operationalDashboard: OperationalDashboardState,
     navigationDrawer: HomeNavigationDrawerState,
-    onEnvironmentSelected: (String) -> Unit,
-    onRetryEnvironments: () -> Unit,
+    onOpenDrawer: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -115,51 +152,50 @@ private fun ReadyContent(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            NavigationDrawerCard(navigationDrawer)
+            MenuHandleCard(
+                drawer = navigationDrawer,
+                onClick = onOpenDrawer,
+            )
         }
         item {
-            HeaderCard(status)
+            HeaderCard(status, selectedEnvironmentName = navigationDrawer.environmentName)
         }
         item {
             OperationalDashboardCard(operationalDashboard)
-        }
-        item {
-            EnvironmentListCard(
-                state = environments,
-                onEnvironmentSelected = onEnvironmentSelected,
-                onRetry = onRetryEnvironments,
-            )
         }
         items(authenticatedDashboardSections()) { section -> SectionCard(section) }
     }
 }
 
 @Composable
-private fun NavigationDrawerCard(drawer: HomeNavigationDrawerState) {
+private fun MenuHandleCard(drawer: HomeNavigationDrawerState, onClick: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = ArcaneColors.Surface),
         border = BorderStroke(1.dp, ArcaneColors.Border),
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = "▰ ARCANE",
-                style = MaterialTheme.typography.titleLarge,
-                color = ArcaneColors.PrimaryPurple,
-                fontWeight = FontWeight.Black,
-            )
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "☰",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = ArcaneColors.PrimaryPurple,
+                    fontWeight = FontWeight.Black,
+                )
+                Column {
                     Text(
                         text = drawer.environmentName,
                         style = MaterialTheme.typography.titleSmall,
@@ -167,13 +203,54 @@ private fun NavigationDrawerCard(drawer: HomeNavigationDrawerState) {
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = drawer.environmentSubtitle,
+                        text = "Tap to open menu and switch environment",
                         style = MaterialTheme.typography.bodySmall,
                         color = ArcaneColors.TextSecondary,
                     )
                 }
-                Text(text = "⌄", color = ArcaneColors.TextSecondary, style = MaterialTheme.typography.titleMedium)
             }
+            Text(text = "⌄", color = ArcaneColors.TextSecondary, style = MaterialTheme.typography.titleMedium)
+        }
+    }
+}
+
+@Composable
+private fun NavigationDrawerContent(
+    drawer: HomeNavigationDrawerState,
+    onEnvironmentSelected: (String) -> Unit,
+) {
+    var environmentsExpanded by remember { mutableStateOf(false) }
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(ArcaneColors.Surface),
+        contentPadding = PaddingValues(18.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        item {
+            Text(
+                text = "▰ ARCANE",
+                style = MaterialTheme.typography.titleLarge,
+                color = ArcaneColors.PrimaryPurple,
+                fontWeight = FontWeight.Black,
+            )
+        }
+        item {
+            EnvironmentSelectorHeader(
+                drawer = drawer,
+                expanded = environmentsExpanded,
+                onToggle = { environmentsExpanded = !environmentsExpanded },
+            )
+        }
+        if (environmentsExpanded) {
+            items(drawer.environmentOptions) { option ->
+                EnvironmentSelectorOptionRow(
+                    option = option,
+                    onClick = { onEnvironmentSelected(option.id) },
+                )
+            }
+        }
+        item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -182,8 +259,89 @@ private fun NavigationDrawerCard(drawer: HomeNavigationDrawerState) {
                 Text(text = "Activity Center", color = ArcaneColors.TextPrimary, style = MaterialTheme.typography.bodyMedium)
                 StatusPill(text = drawer.activityCount.toString())
             }
-            drawer.groups.forEach { group ->
-                NavigationGroupSection(group)
+        }
+        items(drawer.groups) { group ->
+            NavigationGroupSection(group)
+        }
+    }
+}
+
+@Composable
+private fun EnvironmentSelectorHeader(
+    drawer: HomeNavigationDrawerState,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onToggle),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = ArcaneColors.SurfaceElevated),
+        border = BorderStroke(1.dp, ArcaneColors.Border),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = drawer.environmentName,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = ArcaneColors.TextPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = drawer.environmentSubtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = ArcaneColors.TextSecondary,
+                )
+            }
+            Text(
+                text = if (expanded) "⌃" else "⌄",
+                color = ArcaneColors.TextSecondary,
+                style = MaterialTheme.typography.titleMedium,
+            )
+        }
+    }
+}
+
+@Composable
+private fun EnvironmentSelectorOptionRow(
+    option: EnvironmentSelectorOption,
+    onClick: () -> Unit,
+) {
+    val borderColor = if (option.selected) ArcaneColors.PrimaryPurple else ArcaneColors.Border
+    val containerColor = if (option.selected) ArcaneColors.PrimaryPurpleContainer else ArcaneColors.Surface
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        border = BorderStroke(1.dp, borderColor),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = option.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = ArcaneColors.TextPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(text = option.subtitle, style = MaterialTheme.typography.bodySmall, color = ArcaneColors.TextSecondary)
+            }
+            if (option.selected) {
+                StatusPill(text = "Selected")
             }
         }
     }
@@ -312,7 +470,7 @@ private fun DashboardSnapshotUiState.statusLabel(): String = when (this) {
 }
 
 @Composable
-private fun HeaderCard(status: ArcaneStatus) {
+private fun HeaderCard(status: ArcaneStatus, selectedEnvironmentName: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -334,10 +492,17 @@ private fun HeaderCard(status: ArcaneStatus) {
                 fontWeight = FontWeight.Bold,
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = status.message, style = MaterialTheme.typography.bodyLarge, color = ArcaneColors.TextSecondary)
+            Text(
+                text = status.message.withResolvedEnvironment(selectedEnvironmentName),
+                style = MaterialTheme.typography.bodyLarge,
+                color = ArcaneColors.TextSecondary,
+            )
         }
     }
 }
+
+private fun String.withResolvedEnvironment(selectedEnvironmentName: String): String =
+    replace(Regex("Environment: [^.]+\\."), "Environment: $selectedEnvironmentName.")
 
 @Composable
 private fun NextStepCard() {

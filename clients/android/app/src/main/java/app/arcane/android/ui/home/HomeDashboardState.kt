@@ -23,10 +23,19 @@ data class OperationalDashboardState(
 )
 
 data class HomeNavigationDrawerState(
+    val selectedEnvironmentId: String?,
     val environmentName: String,
     val environmentSubtitle: String,
+    val environmentOptions: List<EnvironmentSelectorOption>,
     val activityCount: Int,
     val groups: List<NavigationGroup>,
+)
+
+data class EnvironmentSelectorOption(
+    val id: String,
+    val name: String,
+    val subtitle: String,
+    val selected: Boolean,
 )
 
 data class NavigationGroup(
@@ -67,8 +76,17 @@ fun homeNavigationDrawerState(
 ): HomeNavigationDrawerState {
     val selected = environments.firstOrNull { it.id == selectedEnvironmentId } ?: environments.firstOrNull()
     return HomeNavigationDrawerState(
+        selectedEnvironmentId = selected?.id,
         environmentName = selected?.name?.takeIf { it.isNotBlank() } ?: selected?.id ?: "No environment",
         environmentSubtitle = selected?.apiUrl ?: "Select an environment",
+        environmentOptions = environments.map { environment ->
+            EnvironmentSelectorOption(
+                id = environment.id,
+                name = environment.name.ifBlank { environment.id },
+                subtitle = environment.apiUrl,
+                selected = environment.id == selected?.id,
+            )
+        },
         activityCount = activityCount,
         groups = arcaneNavigationGroups(),
     )
