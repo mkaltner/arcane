@@ -1,5 +1,7 @@
 package app.arcane.android.ui.home
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,8 +13,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -26,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.arcane.android.domain.model.ArcaneStatus
+import app.arcane.android.ui.theme.ArcaneColors
 import app.arcane.android.ui.theme.ArcaneTheme
 
 @Composable
@@ -38,7 +44,7 @@ fun HomeRoute(
 
 @Composable
 fun HomeScreen(uiState: HomeUiState) {
-    Scaffold { innerPadding ->
+    Scaffold(containerColor = ArcaneColors.Background) { innerPadding ->
         when (uiState) {
             HomeUiState.Loading -> LoadingContent(modifier = Modifier.padding(innerPadding))
             is HomeUiState.Ready -> ReadyContent(
@@ -52,13 +58,15 @@ fun HomeScreen(uiState: HomeUiState) {
 @Composable
 private fun LoadingContent(modifier: Modifier = Modifier) {
     Column(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .background(ArcaneColors.Background),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        CircularProgressIndicator()
+        CircularProgressIndicator(color = ArcaneColors.PrimaryPurple)
         Spacer(modifier = Modifier.height(16.dp))
-        Text(text = "Preparing Arcane…")
+        Text(text = "Preparing Arcane…", color = ArcaneColors.TextSecondary)
     }
 }
 
@@ -71,47 +79,108 @@ private fun ReadyContent(status: ArcaneStatus, modifier: Modifier = Modifier) {
         "Settings" to "DataStore preferences placeholder",
     )
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(24.dp),
+        modifier = modifier
+            .fillMaxSize()
+            .background(ArcaneColors.Background),
+        contentPadding = PaddingValues(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            Text(text = status.title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = status.message, style = MaterialTheme.typography.bodyLarge)
+            HeaderCard(status)
         }
         items(layers) { (name, description) -> LayerCard(name, description) }
     }
 }
 
 @Composable
-private fun LayerCard(name: String, description: String) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(20.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+private fun HeaderCard(status: ArcaneStatus) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = ArcaneColors.Surface),
+        border = BorderStroke(1.dp, ArcaneColors.Border),
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
             Text(
-                text = name,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(0.35f),
+                text = "DASHBOARD",
+                style = MaterialTheme.typography.labelMedium,
+                color = ArcaneColors.TextSecondary,
+                fontWeight = FontWeight.Bold,
             )
-            Text(text = description, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(0.65f))
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = status.title,
+                style = MaterialTheme.typography.headlineMedium,
+                color = ArcaneColors.TextPrimary,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = status.message, style = MaterialTheme.typography.bodyLarge, color = ArcaneColors.TextSecondary)
         }
+    }
+}
+
+@Composable
+private fun LayerCard(name: String, description: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = ArcaneColors.SurfaceElevated),
+        border = BorderStroke(1.dp, ArcaneColors.Border),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(18.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = ArcaneColors.TextPrimary,
+                )
+                StatusPill(text = "Ready")
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(text = description, style = MaterialTheme.typography.bodyMedium, color = ArcaneColors.TextSecondary)
+            Spacer(modifier = Modifier.height(14.dp))
+            LinearProgressIndicator(
+                progress = { 0.72f },
+                modifier = Modifier.fillMaxWidth(),
+                color = ArcaneColors.PrimaryPurple,
+                trackColor = ArcaneColors.Border,
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatusPill(text: String) {
+    Card(
+        shape = RoundedCornerShape(999.dp),
+        colors = CardDefaults.cardColors(containerColor = ArcaneColors.SuccessGreenContainer),
+        border = BorderStroke(1.dp, ArcaneColors.SuccessGreen.copy(alpha = 0.35f)),
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            color = ArcaneColors.SuccessGreen,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+        )
     }
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun HomeScreenPreview() {
-    ArcaneTheme {
+    ArcaneTheme(darkTheme = true) {
         HomeScreen(
             uiState = HomeUiState.Ready(
                 ArcaneStatus(
-                    title = "Arcane Android client scaffold ready",
-                    message = "Placeholder preview for the home screen.",
+                    title = "Arcane Manager connected",
+                    message = "Server: https://arcane.example.com. Authentication and environment selection are next.",
                 ),
             ),
         )
