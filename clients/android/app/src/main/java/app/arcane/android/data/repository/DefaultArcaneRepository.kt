@@ -118,18 +118,18 @@ private fun ContainerStatusCounts.toContainerStatusSummary(): ContainerStatusSum
 )
 
 private fun List<DashboardActionItem>.toActionItemsSummary(): ActionItemsSummary {
-    val total = sumOf { it.count }
-    val summary = if (isEmpty() || total == 0) {
+    val visibleItems = filter { it.count > 0 }
+    val summary = if (visibleItems.isEmpty()) {
         "All clear"
     } else {
-        take(2).joinToString(" · ") { item -> "${item.count} ${item.kind.toActionLabel()}" }
+        visibleItems.take(2).joinToString(" · ") { item -> "${item.count} ${item.kind.toActionLabel()}" }
     }
-    return ActionItemsSummary(count = total, summary = summary)
+    return ActionItemsSummary(count = visibleItems.size, summary = summary)
 }
 
 private fun String.toActionLabel(): String = when (this) {
     "stopped_containers" -> "Containers"
-    "image_updates" -> "Image updates"
+    "image_updates" -> "Updates"
     "actionable_vulnerabilities" -> "Security"
     "expiring_keys" -> "API keys"
     else -> replace('_', ' ').replaceFirstChar { char -> char.uppercase() }
