@@ -1,5 +1,6 @@
 package app.arcane.android.ui.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -57,6 +58,8 @@ fun HomeRoute(
         uiState = uiState,
         onEnvironmentSelected = viewModel::selectEnvironment,
         onDestinationSelected = viewModel::selectDestination,
+        onContainerSelected = viewModel::selectContainer,
+        onBack = viewModel::navigateBack,
         onRetryEnvironments = viewModel::refreshEnvironments,
     )
 }
@@ -66,6 +69,8 @@ fun HomeScreen(
     uiState: HomeUiState,
     onEnvironmentSelected: (String) -> Unit = {},
     onDestinationSelected: (HomeDestination) -> Unit = {},
+    onContainerSelected: (String) -> Unit = {},
+    onBack: () -> Boolean = { false },
     onRetryEnvironments: () -> Unit = {},
 ) {
     when (uiState) {
@@ -76,6 +81,8 @@ fun HomeScreen(
             uiState = uiState,
             onEnvironmentSelected = onEnvironmentSelected,
             onDestinationSelected = onDestinationSelected,
+            onContainerSelected = onContainerSelected,
+            onBack = onBack,
             onRetryEnvironments = onRetryEnvironments,
         )
     }
@@ -86,10 +93,15 @@ private fun ReadyScaffold(
     uiState: HomeUiState.Ready,
     onEnvironmentSelected: (String) -> Unit,
     onDestinationSelected: (HomeDestination) -> Unit,
+    onContainerSelected: (String) -> Unit,
+    onBack: () -> Boolean,
     onRetryEnvironments: () -> Unit,
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    BackHandler(enabled = uiState.selectedDestination != HomeDestination.Dashboard) {
+        onBack()
+    }
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -114,8 +126,10 @@ private fun ReadyScaffold(
                 navigationDrawer = uiState.navigationDrawer,
                 selectedDestination = uiState.selectedDestination,
                 containers = uiState.containers,
+                containerDetail = uiState.containerDetail,
                 onOpenDrawer = { scope.launch { drawerState.open() } },
                 onDestinationSelected = onDestinationSelected,
+                onContainerSelected = onContainerSelected,
                 modifier = Modifier.padding(innerPadding),
             )
         }
@@ -143,8 +157,10 @@ private fun ReadyContent(
     navigationDrawer: HomeNavigationDrawerState,
     selectedDestination: HomeDestination,
     containers: ContainersScreenState,
+    containerDetail: ContainerDetailScreenState,
     onOpenDrawer: () -> Unit,
     onDestinationSelected: (HomeDestination) -> Unit,
+    onContainerSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -204,9 +220,29 @@ private fun ReadyContent(
                                 )
                             }
                         } else {
-                            items(containers.rows) { row -> ContainerRowCard(row) }
+                            items(containers.rows) { row ->
+                                ContainerRowCard(
+                                    row = row,
+                                    onClick = { onContainerSelected(row.id) },
+                                )
+                            }
                         }
                     }
+                }
+            }
+            HomeDestination.ContainerDetail -> {
+                item { ContainerDetailHeader(containerDetail) }
+                items(containerDetail.facts) { fact -> ContainerFactCard(fact) }
+                when (val detailState = containerDetail.detailState) {
+                    ContainerDetailUiState.Loading -> item { EnvironmentLoadingRow() }
+                    is ContainerDetailUiState.Error -> item {
+                        Text(
+                            text = detailState.message,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = ArcaneColors.ErrorRed,
+                        )
+                    }
+                    is ContainerDetailUiState.Content -> Unit
                 }
             }
         }
@@ -818,9 +854,11 @@ private fun ResourceStatsRow(stats: List<ResourceStatCard>) {
 }
 
 @Composable
-private fun ContainerRowCard(row: ContainerRowState) {
+private fun ContainerRowCard(row: ContainerRowState, onClick: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = ArcaneColors.SurfaceElevated),
         border = BorderStroke(1.dp, ArcaneColors.Border),
@@ -853,6 +891,65 @@ private fun ContainerRowCard(row: ContainerRowState) {
                 )
             }
             StatusPill(text = row.badge)
+        }
+    }
+}
+
+@Composable
+private fun ContainerDetailHeader(detail: ContainerDetailScreenState) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = ArcaneColors.SurfaceElevated),
+        border = BorderStroke(1.dp, ArcaneColors.Border),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = detail.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = ArcaneColors.TextPrimary,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = detail.subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = ArcaneColors.TextSecondary,
+                )
+            }
+            StatusPill(text = detail.badge)
+        }
+    }
+}
+
+@Composable
+private fun ContainerFactCard(fact: ContainerFactRow) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = ArcaneColors.SurfaceElevated),
+        border = BorderStroke(1.dp, ArcaneColors.Border),
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(
+                text = fact.label,
+                style = MaterialTheme.typography.labelMedium,
+                color = ArcaneColors.PrimaryPurple,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = fact.value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = ArcaneColors.TextPrimary,
+            )
         }
     }
 }

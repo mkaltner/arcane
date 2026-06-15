@@ -43,8 +43,8 @@ class ContainerListStateTest {
         )
         assertEquals(
             listOf(
-                ContainerRowState("arcane-web", "ghcr.io/ofkm/arcane:latest", "Up 3 hours", "Running"),
-                ContainerRowState("postgres", "postgres:16", "Exited (0) 2 minutes ago", "Stopped"),
+                ContainerRowState("abc123", "arcane-web", "ghcr.io/ofkm/arcane:latest", "Up 3 hours", "Running"),
+                ContainerRowState("def456", "postgres", "postgres:16", "Exited (0) 2 minutes ago", "Stopped"),
             ),
             state.rows,
         )
@@ -84,5 +84,63 @@ class ContainerListStateTest {
         val resources = state.groups.single { it.title == "Resources" }.items
         assertEquals(true, resources.single { it.destination == HomeDestination.Containers }.selected)
         assertEquals(false, state.groups.first().items.single { it.destination == HomeDestination.Dashboard }.selected)
+    }
+
+    @Test
+    fun `container rows keep id for opening detail screen`() {
+        val state = containersScreenState(
+            selectedEnvironmentName = "v0idLab",
+            containersState = ContainerListUiState.Content(
+                containers = listOf(
+                    ArcaneContainer(
+                        id = "8f6c5b4a3d2e",
+                        name = "v0idlab-arcane-1",
+                        image = "ghcr.io/getarcaneapp/arcane:latest",
+                        state = "running",
+                        status = "Up 2 hours (unhealthy)",
+                    ),
+                ),
+                counts = null,
+            ),
+        )
+
+        assertEquals("8f6c5b4a3d2e", state.rows.single().id)
+    }
+
+    @Test
+    fun `container detail state uses selected row fields for next drill down`() {
+        val detail = containerDetailScreenState(
+            selectedEnvironmentName = "v0idLab",
+            selectedContainer = ArcaneContainer(
+                id = "8f6c5b4a3d2e",
+                name = "v0idlab-arcane-1",
+                image = "ghcr.io/getarcaneapp/arcane:latest",
+                state = "running",
+                status = "Up 2 hours (unhealthy)",
+            ),
+            detailState = ContainerDetailUiState.Loading,
+        )
+
+        assertEquals("v0idlab-arcane-1", detail.title)
+        assertEquals("Environment: v0idLab", detail.subtitle)
+        assertEquals("Running", detail.badge)
+        assertEquals(
+            listOf(
+                ContainerFactRow("Container ID", "8f6c5b4a3d2e"),
+                ContainerFactRow("Image", "ghcr.io/getarcaneapp/arcane:latest"),
+                ContainerFactRow("Status", "Up 2 hours (unhealthy)"),
+            ),
+            detail.facts,
+        )
+    }
+
+    @Test
+    fun `back from containers returns dashboard instead of exiting app`() {
+        assertEquals(HomeDestination.Dashboard, selectedDestinationAfterBack(HomeDestination.Containers))
+    }
+
+    @Test
+    fun `back from container detail returns containers list`() {
+        assertEquals(HomeDestination.Containers, selectedDestinationAfterBack(HomeDestination.ContainerDetail))
     }
 }

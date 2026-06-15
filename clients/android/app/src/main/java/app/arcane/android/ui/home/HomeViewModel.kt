@@ -22,15 +22,28 @@ class HomeViewModel @Inject constructor(
     private val environmentListState = MutableStateFlow<EnvironmentListUiState>(EnvironmentListUiState.Loading)
     private val dashboardSnapshotState = MutableStateFlow<DashboardSnapshotUiState>(DashboardSnapshotUiState.Loading)
     private val containerListState = MutableStateFlow<ContainerListUiState>(ContainerListUiState.Loading)
+    private val containerDetailState = MutableStateFlow<ContainerDetailUiState>(ContainerDetailUiState.Loading)
     private val selectedDestination = MutableStateFlow(HomeDestination.Dashboard)
+    private val selectedContainerId = MutableStateFlow<String?>(null)
 
     val uiState: StateFlow<HomeUiState> = combine(
-        repository.observeStatus(),
-        environmentListState,
-        dashboardSnapshotState,
-        containerListState,
-        selectedDestination,
-    ) { status, environments, dashboardSnapshot, containers, destination ->
+        listOf(
+            repository.observeStatus(),
+            environmentListState,
+            dashboardSnapshotState,
+            containerListState,
+            containerDetailState,
+            selectedDestination,
+            selectedContainerId,
+        ),
+    ) { values ->
+        val status = values[0] as ArcaneStatus
+        val environments = values[1] as EnvironmentListUiState
+        val dashboardSnapshot = values[2] as DashboardSnapshotUiState
+        val containers = values[3] as ContainerListUiState
+        val containerDetail = values[4] as ContainerDetailUiState
+        val destination = values[5] as HomeDestination
+        val containerId = values[6] as String?
         val selectedEnvironments = if (environments is EnvironmentListUiState.Content) {
             environments.copy(selectedEnvironmentId = status.selectedEnvironmentId)
         } else {
@@ -43,6 +56,9 @@ class HomeViewModel @Inject constructor(
             selectedEnvironmentId = selectedEnvironmentId,
             snapshotState = dashboardSnapshot,
         )
+        val selectedContainer = (containers as? ContainerListUiState.Content)
+            ?.containers
+            ?.firstOrNull { it.id == containerId }
         HomeUiState.Ready(
             status = status,
             environments = selectedEnvironments,
@@ -56,6 +72,12 @@ class HomeViewModel @Inject constructor(
             containers = containersScreenState(
                 selectedEnvironmentName = operationalDashboard.selectedEnvironmentName,
                 containersState = containers,
+            ),
+            selectedContainerId = containerId,
+            containerDetail = containerDetailScreenState(
+                selectedEnvironmentName = operationalDashboard.selectedEnvironmentName,
+                selectedContainer = selectedContainer,
+                detailState = containerDetail,
             ),
         )
     }.stateIn(
@@ -120,6 +142,9 @@ class HomeViewModel @Inject constructor(
 
     fun selectDestination(destination: HomeDestination) {
         selectedDestination.value = destination
+        if (destination != HomeDestination.ContainerDetail) {
+            selectedContainerId.value = null
+        }
         if (destination == HomeDestination.Containers) {
             val environmentId = (uiState.value as? HomeUiState.Ready)?.navigationDrawer?.selectedEnvironmentId
             if (environmentId != null) {
@@ -128,6 +153,26 @@ class HomeViewModel @Inject constructor(
                 containerListState.value = ContainerListUiState.Error("Select an environment to load containers.")
             }
         }
+    }
+
+    fun selectContainer(containerId: String) {
+        selectedContainerId.value = containerId
+        selectedDestination.value = HomeDestination.ContainerDetail
+        val environmentId = (uiState.value as? HomeUiState.Ready)?.navigationDrawer?.selectedEnvironmentId
+        if (environmentId != null) {
+            viewModelScope.launch { loadContainerDetail(environmentId, containerId) }
+        } else {
+            containerDetailState.value = ContainerDetailUiState.Error("Select an environment to load container details.")
+        }
+    }
+
+    fun navigateBack(): Boolean {
+        val nextDestination = selectedDestinationAfterBack(selectedDestination.value) ?: return false
+        selectedDestination.value = nextDestination
+        if (nextDestination != HomeDestination.ContainerDetail) {
+            selectedContainerId.value = null
+        }
+        return true
     }
 
     private suspend fun loadDashboard(environmentId: String) {
@@ -155,6 +200,19 @@ class HomeViewModel @Inject constructor(
                 )
             }
     }
+
+    private suspend fun loadContainerDetail(environmentId: String, containerId: String) {
+        containerDetailState.value = ContainerDetailUiState.Loading
+        repository.getContainer(environmentId, containerId)
+            .onSuccess { detail ->
+                containerDetailState.value = ContainerDetailUiState.Content(detail)
+            }
+            .onFailure { error ->
+                containerDetailState.value = ContainerDetailUiState.Error(
+                    message = error.message ?: "Unable to load container details.",
+                )
+            }
+    }
 }
 
 sealed interface HomeUiState {
@@ -175,6 +233,12 @@ sealed interface HomeUiState {
         val containers: ContainersScreenState = containersScreenState(
             selectedEnvironmentName = status.selectedEnvironmentId.orEmpty(),
             containersState = ContainerListUiState.Loading,
+        ),
+        val selectedContainerId: String? = null,
+        val containerDetail: ContainerDetailScreenState = containerDetailScreenState(
+            selectedEnvironmentName = status.selectedEnvironmentId.orEmpty(),
+            selectedContainer = null,
+            detailState = ContainerDetailUiState.Loading,
         ),
     ) : HomeUiState
 }

@@ -2,6 +2,7 @@ package app.arcane.android.ui.home
 
 import app.arcane.android.domain.model.ArcaneDashboardSnapshot
 import app.arcane.android.domain.model.ArcaneContainer
+import app.arcane.android.domain.model.ArcaneContainerDetail
 import app.arcane.android.domain.model.ArcaneContainerList
 import app.arcane.android.domain.model.ArcaneEnvironment
 import app.arcane.android.domain.model.ContainerStatusSummary
@@ -10,6 +11,7 @@ import java.util.Locale
 enum class HomeDestination {
     Dashboard,
     Containers,
+    ContainerDetail,
 }
 
 sealed interface DashboardSnapshotUiState {
@@ -79,6 +81,7 @@ sealed interface ContainerListUiState {
 data class ResourceStatCard(val label: String, val value: String)
 
 data class ContainerRowState(
+    val id: String,
     val name: String,
     val image: String,
     val status: String,
@@ -91,6 +94,22 @@ data class ContainersScreenState(
     val state: ContainerListUiState,
     val stats: List<ResourceStatCard>,
     val rows: List<ContainerRowState>,
+)
+
+sealed interface ContainerDetailUiState {
+    data object Loading : ContainerDetailUiState
+    data class Content(val detail: ArcaneContainerDetail) : ContainerDetailUiState
+    data class Error(val message: String) : ContainerDetailUiState
+}
+
+data class ContainerFactRow(val label: String, val value: String)
+
+data class ContainerDetailScreenState(
+    val title: String,
+    val subtitle: String,
+    val badge: String,
+    val facts: List<ContainerFactRow>,
+    val detailState: ContainerDetailUiState,
 )
 
 fun operationalDashboardState(
@@ -161,6 +180,7 @@ fun containersScreenState(
         ),
         rows = containers.map { container ->
             ContainerRowState(
+                id = container.id,
                 name = container.name,
                 image = container.image,
                 status = container.status.ifBlank { container.state.ifBlank { "No status" } },
@@ -174,6 +194,43 @@ fun ArcaneContainerList.toContainerListUiState(): ContainerListUiState = Contain
     containers = containers,
     counts = counts,
 )
+
+fun containerDetailScreenState(
+    selectedEnvironmentName: String,
+    selectedContainer: ArcaneContainer?,
+    detailState: ContainerDetailUiState,
+): ContainerDetailScreenState {
+    val detail = (detailState as? ContainerDetailUiState.Content)?.detail
+    val title = detail?.name?.ifBlank { selectedContainer?.name.orEmpty() }
+        ?: selectedContainer?.name
+        ?: "Container details"
+    val image = detail?.image?.takeIf { it.isNotBlank() } ?: selectedContainer?.image.orEmpty()
+    val status = selectedContainer?.status?.takeIf { it.isNotBlank() } ?: selectedContainer?.state.orEmpty()
+    val facts = buildList {
+        val id = detail?.id?.takeIf { it.isNotBlank() } ?: selectedContainer?.id.orEmpty()
+        if (id.isNotBlank()) add(ContainerFactRow("Container ID", id))
+        if (image.isNotBlank()) add(ContainerFactRow("Image", image))
+        if (status.isNotBlank()) add(ContainerFactRow("Status", status))
+        detail?.imageId?.takeIf { it.isNotBlank() }?.let { add(ContainerFactRow("Image ID", it)) }
+        detail?.created?.takeIf { it.isNotBlank() }?.let { add(ContainerFactRow("Created", it)) }
+        detail?.composeProject?.takeIf { it.isNotBlank() }?.let { add(ContainerFactRow("Compose project", it)) }
+        detail?.composeService?.takeIf { it.isNotBlank() }?.let { add(ContainerFactRow("Compose service", it)) }
+        detail?.mounts.orEmpty().forEachIndexed { index, mount -> add(ContainerFactRow("Mount ${index + 1}", mount)) }
+    }
+    return ContainerDetailScreenState(
+        title = title,
+        subtitle = "Environment: $selectedEnvironmentName",
+        badge = if (selectedContainer?.state.equals("running", ignoreCase = true)) "Running" else "Stopped",
+        facts = facts,
+        detailState = detailState,
+    )
+}
+
+fun selectedDestinationAfterBack(destination: HomeDestination): HomeDestination? = when (destination) {
+    HomeDestination.ContainerDetail -> HomeDestination.Containers
+    HomeDestination.Containers -> HomeDestination.Dashboard
+    HomeDestination.Dashboard -> null
+}
 
 private fun ArcaneDashboardSnapshot.dashboardMetrics(): List<DashboardMetric> = listOf(
     DashboardMetric(

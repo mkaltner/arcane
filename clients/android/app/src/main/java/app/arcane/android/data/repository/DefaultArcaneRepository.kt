@@ -1,7 +1,9 @@
 package app.arcane.android.data.repository
 
 import app.arcane.android.data.api.ArcaneApiClient
+import app.arcane.android.data.api.ContainerDetails
 import app.arcane.android.data.api.ContainerListResponse
+import app.arcane.android.data.api.ContainerMount
 import app.arcane.android.data.api.ContainerStatusCounts
 import app.arcane.android.data.api.ContainerSummary
 import app.arcane.android.data.api.DashboardActionItem
@@ -11,6 +13,7 @@ import app.arcane.android.data.settings.ArcaneSettings
 import app.arcane.android.data.settings.SettingsDataStore
 import app.arcane.android.domain.model.ActionItemsSummary
 import app.arcane.android.domain.model.ArcaneContainer
+import app.arcane.android.domain.model.ArcaneContainerDetail
 import app.arcane.android.domain.model.ArcaneContainerList
 import app.arcane.android.domain.model.ArcaneDashboardSnapshot
 import app.arcane.android.domain.model.ArcaneEnvironment
@@ -42,6 +45,10 @@ class DefaultArcaneRepository @Inject constructor(
 
     override suspend fun listContainers(environmentId: String): Result<ArcaneContainerList> = runCatching {
         apiClient.listContainers(environmentId = environmentId).toArcaneContainerList()
+    }
+
+    override suspend fun getContainer(environmentId: String, containerId: String): Result<ArcaneContainerDetail> = runCatching {
+        apiClient.getContainer(environmentId = environmentId, containerId = containerId).toArcaneContainerDetail()
     }
 
     override suspend fun selectEnvironment(environmentId: String) {
@@ -86,6 +93,23 @@ internal fun ContainerSummary.toArcaneContainer(): ArcaneContainer = ArcaneConta
     state = state,
     status = status,
 )
+
+internal fun ContainerDetails.toArcaneContainerDetail(): ArcaneContainerDetail = ArcaneContainerDetail(
+    id = id,
+    name = name.trimStart('/').takeIf { it.isNotBlank() } ?: id.take(12),
+    image = image,
+    imageId = imageId,
+    created = created,
+    composeProject = composeInfo?.projectName,
+    composeService = composeInfo?.serviceName,
+    mounts = mounts.map { it.toFactText() },
+)
+
+private fun ContainerMount.toFactText(): String {
+    val sourceLabel = name ?: source ?: type.ifBlank { "mount" }
+    val access = if (rw) "rw" else "ro"
+    return "$sourceLabel → $destination ($access)"
+}
 
 private fun ContainerStatusCounts.toContainerStatusSummary(): ContainerStatusSummary = ContainerStatusSummary(
     runningContainers = runningContainers,

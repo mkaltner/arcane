@@ -12,3 +12,14 @@ data class ArcaneContainer(
     val state: String = "",
     val status: String = "",
 )
+
+data class ArcaneContainerDetail(
+    val id: String,
+    val name: String,
+    val image: String = "",
+    val imageId: String = "",
+    val created: String = "",
+    val composeProject: String? = null,
+    val composeService: String? = null,
+    val mounts: List<String> = emptyList(),
+)
