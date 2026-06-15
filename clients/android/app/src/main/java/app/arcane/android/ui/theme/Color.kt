@@ -10,7 +10,7 @@ object ArcaneColors {
     val Border = Color(0xFF262633)
     val BorderSelected = Color(0xFF334155)
 
-    val PrimaryPurple = Color(0xFFA855F7)
+    val PrimaryPurple = Color(0xFF8E51FF)
     val PrimaryPurpleDark = Color(0xFF6D28D9)
     val PrimaryPurpleContainer = Color(0xFF1F1235)
     val SuccessGreen = Color(0xFF00D084)
