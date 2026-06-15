@@ -65,5 +65,6 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.datastore.preferences)
     testImplementation(libs.junit)
+    testImplementation(libs.ktor.client.mock)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
