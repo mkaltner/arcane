@@ -104,11 +104,30 @@ sealed interface ContainerDetailUiState {
 
 data class ContainerFactRow(val label: String, val value: String)
 
+data class ContainerActionAffordance(
+    val label: String,
+    val primary: Boolean,
+    val enabled: Boolean,
+)
+
+data class ContainerSectionState(
+    val title: String,
+    val rows: List<ContainerFactRow>,
+)
+
+data class ContainerSectionLink(
+    val title: String,
+    val description: String,
+)
+
 data class ContainerDetailScreenState(
     val title: String,
     val subtitle: String,
     val badge: String,
     val facts: List<ContainerFactRow>,
+    val sections: List<ContainerSectionState>,
+    val actions: List<ContainerActionAffordance>,
+    val futureSections: List<ContainerSectionLink>,
     val detailState: ContainerDetailUiState,
 )
 
@@ -205,9 +224,14 @@ fun containerDetailScreenState(
         ?: selectedContainer?.name
         ?: "Container details"
     val image = detail?.image?.takeIf { it.isNotBlank() } ?: selectedContainer?.image.orEmpty()
-    val status = selectedContainer?.status?.takeIf { it.isNotBlank() } ?: selectedContainer?.state.orEmpty()
-    val facts = buildList {
-        val id = detail?.id?.takeIf { it.isNotBlank() } ?: selectedContainer?.id.orEmpty()
+    val detailStatus = detail?.status?.takeIf { it.isNotBlank() }
+    val rowStatus = selectedContainer?.status?.takeIf { it.isNotBlank() } ?: selectedContainer?.state.orEmpty()
+    val status = detailStatus ?: rowStatus
+    val subtitleStatus = rowStatus.takeIf { it.isNotBlank() } ?: status
+    val running = detail?.running ?: selectedContainer?.state.equals("running", ignoreCase = true)
+    val id = detail?.id?.takeIf { it.isNotBlank() } ?: selectedContainer?.id.orEmpty()
+    val sections = buildContainerDetailSections(detail, id, image, status, subtitleStatus)
+    val legacyFacts = buildList {
         if (id.isNotBlank()) add(ContainerFactRow("Container ID", id))
         if (image.isNotBlank()) add(ContainerFactRow("Image", image))
         if (status.isNotBlank()) add(ContainerFactRow("Status", status))
@@ -219,11 +243,82 @@ fun containerDetailScreenState(
     }
     return ContainerDetailScreenState(
         title = title,
-        subtitle = "Environment: $selectedEnvironmentName",
-        badge = if (selectedContainer?.state.equals("running", ignoreCase = true)) "Running" else "Stopped",
-        facts = facts,
+        subtitle = listOf(selectedEnvironmentName, subtitleStatus).filter { it.isNotBlank() }.joinToString(" · "),
+        badge = if (running) "Running" else "Stopped",
+        facts = legacyFacts,
+        sections = sections,
+        actions = containerDetailActions(running),
+        futureSections = listOf(
+            ContainerSectionLink("Runtime", "Metrics, logs, and health are next"),
+            ContainerSectionLink("Connectivity & Storage", "Network and mount details are next"),
+            ContainerSectionLink("Advanced", "Configuration, Compose, Shell, and Inspect are next"),
+        ),
         detailState = detailState,
     )
+}
+
+private fun buildContainerDetailSections(
+    detail: ArcaneContainerDetail?,
+    id: String,
+    image: String,
+    status: String,
+    uptime: String,
+): List<ContainerSectionState> = buildList {
+    section(
+        "Summary",
+        listOfNotNull(
+            "Image" rowIfValue image,
+            "Uptime" rowIfValue detail?.let { if (it.running) uptime else "" }.orEmpty(),
+            "IP address" rowIfValue detail?.primaryIpAddress.orEmpty(),
+            "Status" rowIfValue (detail?.status?.takeIf { it.isNotBlank() } ?: status),
+        ),
+    )
+    section(
+        "Identity & lifecycle",
+        listOfNotNull(
+            "Container ID" rowIfValue id,
+            "Created" rowIfValue detail?.created.orEmpty(),
+            "Started" rowIfValue detail?.startedAt.orEmpty(),
+            "Restart policy" rowIfValue detail?.restartPolicy.orEmpty(),
+            detail?.autoUpdateEnabled?.let { ContainerFactRow("Auto-update", if (it) "Enabled" else "Disabled") },
+        ),
+    )
+    section(
+        "Connectivity & storage",
+        listOfNotNull(
+            "Ports" rowIfValue detail?.portsSummary.orEmpty(),
+            "Volumes" rowIfValue detail?.volumesSummary.orEmpty(),
+            "Networks" rowIfValue detail?.networksSummary.orEmpty(),
+        ),
+    )
+    section(
+        "Runtime configuration",
+        listOfNotNull(
+            "Image ID" rowIfValue detail?.imageId.orEmpty(),
+            "Working directory" rowIfValue detail?.workingDirectory.orEmpty(),
+            "Entrypoint" rowIfValue detail?.entrypoint.orEmpty(),
+            "Command" rowIfValue detail?.command.orEmpty(),
+            "Compose project" rowIfValue detail?.composeProject.orEmpty(),
+            "Compose service" rowIfValue detail?.composeService.orEmpty(),
+        ),
+    )
+}
+
+private infix fun String.rowIfValue(value: String): ContainerFactRow? =
+    value.takeIf { it.isNotBlank() }?.let { ContainerFactRow(this, it) }
+
+private fun MutableList<ContainerSectionState>.section(title: String, rows: List<ContainerFactRow>) {
+    if (rows.isNotEmpty()) add(ContainerSectionState(title, rows))
+}
+
+private fun containerDetailActions(running: Boolean): List<ContainerActionAffordance> = if (running) {
+    listOf(
+        ContainerActionAffordance("Stop", primary = true, enabled = false),
+        ContainerActionAffordance("Restart", primary = false, enabled = false),
+        ContainerActionAffordance("Redeploy", primary = false, enabled = false),
+    )
+} else {
+    listOf(ContainerActionAffordance("Start", primary = true, enabled = false))
 }
 
 fun selectedDestinationAfterBack(destination: HomeDestination): HomeDestination? = when (destination) {

@@ -130,6 +130,7 @@ private fun ReadyScaffold(
                 onOpenDrawer = { scope.launch { drawerState.open() } },
                 onDestinationSelected = onDestinationSelected,
                 onContainerSelected = onContainerSelected,
+                onBack = onBack,
                 modifier = Modifier.padding(innerPadding),
             )
         }
@@ -161,6 +162,7 @@ private fun ReadyContent(
     onOpenDrawer: () -> Unit,
     onDestinationSelected: (HomeDestination) -> Unit,
     onContainerSelected: (String) -> Unit,
+    onBack: () -> Boolean,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -231,8 +233,22 @@ private fun ReadyContent(
                 }
             }
             HomeDestination.ContainerDetail -> {
-                item { ContainerDetailHeader(containerDetail) }
-                items(containerDetail.facts) { fact -> ContainerFactCard(fact) }
+                item { ContainerDetailHeader(containerDetail, onBack = { onBack() }) }
+                if (containerDetail.actions.isNotEmpty()) {
+                    item { ContainerActionRow(containerDetail.actions) }
+                }
+                items(containerDetail.sections) { section -> ContainerSectionCard(section) }
+                if (containerDetail.futureSections.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = "MORE DETAILS",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = ArcaneColors.TextSecondary,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                    items(containerDetail.futureSections) { link -> ContainerSectionLinkCard(link) }
+                }
                 when (val detailState = containerDetail.detailState) {
                     ContainerDetailUiState.Loading -> item { EnvironmentLoadingRow() }
                     is ContainerDetailUiState.Error -> item {
@@ -896,35 +912,156 @@ private fun ContainerRowCard(row: ContainerRowState, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ContainerDetailHeader(detail: ContainerDetailScreenState) {
+private fun ContainerDetailHeader(detail: ContainerDetailScreenState, onBack: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = ArcaneColors.SurfaceElevated),
         border = BorderStroke(1.dp, ArcaneColors.Border),
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Card(
+                    modifier = Modifier.clickable(onClick = onBack),
+                    shape = RoundedCornerShape(999.dp),
+                    colors = CardDefaults.cardColors(containerColor = ArcaneColors.Surface),
+                    border = BorderStroke(1.dp, ArcaneColors.Border),
+                ) {
+                    Text(
+                        text = "‹ Back",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = ArcaneColors.PrimaryPurple,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                StatusPill(text = detail.badge)
+            }
+            Text(
+                text = detail.title,
+                style = MaterialTheme.typography.titleLarge,
+                color = ArcaneColors.TextPrimary,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = detail.subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = ArcaneColors.TextSecondary,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ContainerActionRow(actions: List<ContainerActionAffordance>) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        actions.forEach { action ->
+            val containerColor = if (action.primary) ArcaneColors.PrimaryPurpleContainer else ArcaneColors.SurfaceElevated
+            val contentColor = if (action.primary) ArcaneColors.PrimaryPurple else ArcaneColors.TextSecondary
+            Card(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(999.dp),
+                colors = CardDefaults.cardColors(containerColor = containerColor),
+                border = BorderStroke(1.dp, contentColor.copy(alpha = 0.35f)),
+            ) {
+                Text(
+                    text = action.label,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                    color = contentColor,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContainerSectionCard(section: ContainerSectionState) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = ArcaneColors.SurfaceElevated),
+        border = BorderStroke(1.dp, ArcaneColors.Border),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = section.title,
+                style = MaterialTheme.typography.titleMedium,
+                color = ArcaneColors.TextPrimary,
+                fontWeight = FontWeight.SemiBold,
+            )
+            section.rows.forEach { fact -> ContainerFactRowView(fact) }
+        }
+    }
+}
+
+@Composable
+private fun ContainerFactRowView(fact: ContainerFactRow) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top,
+    ) {
+        Text(
+            text = fact.label,
+            modifier = Modifier.weight(0.42f),
+            style = MaterialTheme.typography.bodySmall,
+            color = ArcaneColors.TextSecondary,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            text = fact.value,
+            modifier = Modifier.weight(0.58f),
+            style = MaterialTheme.typography.bodySmall,
+            color = ArcaneColors.TextPrimary,
+            fontWeight = FontWeight.Medium,
+        )
+    }
+}
+
+@Composable
+private fun ContainerSectionLinkCard(link: ContainerSectionLink) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = ArcaneColors.Surface),
+        border = BorderStroke(1.dp, ArcaneColors.Border),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = detail.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = ArcaneColors.TextPrimary,
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = detail.subtitle,
+                    text = link.title,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = ArcaneColors.TextSecondary,
+                    color = ArcaneColors.TextPrimary,
+                    fontWeight = FontWeight.SemiBold,
                 )
+                Text(text = link.description, style = MaterialTheme.typography.bodySmall, color = ArcaneColors.TextSecondary)
             }
-            StatusPill(text = detail.badge)
+            Text(text = "›", color = ArcaneColors.PrimaryPurple, style = MaterialTheme.typography.titleMedium)
         }
     }
 }

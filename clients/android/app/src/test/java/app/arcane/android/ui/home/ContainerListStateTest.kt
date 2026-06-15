@@ -122,7 +122,7 @@ class ContainerListStateTest {
         )
 
         assertEquals("v0idlab-arcane-1", detail.title)
-        assertEquals("Environment: v0idLab", detail.subtitle)
+        assertEquals("v0idLab · Up 2 hours (unhealthy)", detail.subtitle)
         assertEquals("Running", detail.badge)
         assertEquals(
             listOf(

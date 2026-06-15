@@ -94,16 +94,53 @@ internal fun ContainerSummary.toArcaneContainer(): ArcaneContainer = ArcaneConta
     status = status,
 )
 
-internal fun ContainerDetails.toArcaneContainerDetail(): ArcaneContainerDetail = ArcaneContainerDetail(
-    id = id,
-    name = name.trimStart('/').takeIf { it.isNotBlank() } ?: id.take(12),
-    image = image,
-    imageId = imageId,
-    created = created,
-    composeProject = composeInfo?.projectName,
-    composeService = composeInfo?.serviceName,
-    mounts = mounts.map { it.toFactText() },
-)
+internal fun ContainerDetails.toArcaneContainerDetail(): ArcaneContainerDetail {
+    val portCounts = ports.distinctBy { port ->
+        "${port.publicPort ?: 0}:${port.privatePort}/${port.type}"
+    }.fold(0 to 0) { (published, exposed), port ->
+        if ((port.publicPort ?: 0) > 0) published + 1 to exposed else published to exposed + 1
+    }
+    val networkCount = networkSettings.networks.size
+    return ArcaneContainerDetail(
+        id = id,
+        name = name.trimStart('/').takeIf { it.isNotBlank() } ?: id.take(12),
+        image = image,
+        imageId = imageId,
+        created = created,
+        status = state.status,
+        running = state.running,
+        startedAt = state.startedAt,
+        primaryIpAddress = networkSettings.networks.values.firstOrNull { it.ipAddress.isNotBlank() }?.ipAddress.orEmpty(),
+        restartPolicy = hostConfig.restartPolicy.orEmpty(),
+        autoUpdateEnabled = labels.isAutoUpdateEnabled(name),
+        portsSummary = portCounts.toPortsSummary(),
+        volumesSummary = mounts.size.toCountSummary("mount", "mounts"),
+        networksSummary = networkCount.toCountSummary("network", "networks"),
+        workingDirectory = config.workingDir,
+        entrypoint = config.entrypoint.joinToString(" "),
+        command = config.cmd.joinToString(" "),
+        composeProject = composeInfo?.projectName,
+        composeService = composeInfo?.serviceName,
+        mounts = mounts.map { it.toFactText() },
+    )
+}
+
+private fun Map<String, String>.isAutoUpdateEnabled(containerName: String): Boolean {
+    val labelValue = entries.firstOrNull { (key, _) -> key.equals("com.getarcaneapp.arcane.updater", ignoreCase = true) }?.value
+    return labelValue?.trim()?.lowercase() !in setOf("false", "0", "no", "off")
+}
+
+private fun Pair<Int, Int>.toPortsSummary(): String {
+    val (published, exposed) = this
+    return when {
+        published == 0 && exposed == 0 -> "No ports"
+        published > 0 && exposed > 0 -> "$published published · $exposed exposed"
+        published > 0 -> published.toCountSummary("published", "published")
+        else -> exposed.toCountSummary("exposed", "exposed")
+    }
+}
+
+private fun Int.toCountSummary(singular: String, plural: String): String = "$this ${if (this == 1) singular else plural}"
 
 private fun ContainerMount.toFactText(): String {
     val sourceLabel = name ?: source ?: type.ifBlank { "mount" }

@@ -166,12 +166,31 @@ data class ContainerDetails(
     val image: String = "",
     val imageId: String = "",
     val created: String = "",
-    val state: JsonElement? = null,
-    val config: JsonElement? = null,
-    val hostConfig: JsonElement? = null,
-    val networkSettings: JsonElement? = null,
+    val state: ContainerState = ContainerState(),
+    val config: ContainerConfig = ContainerConfig(),
+    val hostConfig: HostConfig = HostConfig(),
+    val networkSettings: NetworkSettings = NetworkSettings(),
+    val ports: List<ContainerPort> = emptyList(),
     val mounts: List<ContainerMount> = emptyList(),
+    val labels: Map<String, String> = emptyMap(),
     val composeInfo: ComposeInfo? = null,
+)
+
+@Serializable
+data class ContainerState(
+    val status: String = "",
+    val running: Boolean = false,
+    val startedAt: String = "",
+    val finishedAt: String = "",
+)
+
+@Serializable
+data class ContainerConfig(
+    val env: List<String> = emptyList(),
+    val cmd: List<String> = emptyList(),
+    val entrypoint: List<String> = emptyList(),
+    val workingDir: String = "",
+    val user: String = "",
 )
 
 @Serializable
@@ -197,11 +216,29 @@ data class ContainerMount(
 @Serializable
 data class HostConfig(
     val networkMode: String? = null,
+    val restartPolicy: String? = null,
+    val privileged: Boolean = false,
+    val autoRemove: Boolean = false,
+    val nanoCpus: Long? = null,
+    val memory: Long? = null,
 )
+
+typealias ContainerHostConfig = HostConfig
 
 @Serializable
 data class NetworkSettings(
-    val networks: Map<String, JsonElement> = emptyMap(),
+    val networks: Map<String, ContainerNetwork> = emptyMap(),
+)
+
+typealias ContainerNetworkSettings = NetworkSettings
+
+@Serializable
+data class ContainerNetwork(
+    val ipAddress: String = "",
+    val gateway: String = "",
+    val macAddress: String = "",
+    val networkId: String = "",
+    val endpointId: String = "",
 )
 
 @Serializable
