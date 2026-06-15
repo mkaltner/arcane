@@ -1,7 +1,10 @@
 package app.arcane.android.data.repository
 
+import app.arcane.android.data.api.ArcaneApiClient
+import app.arcane.android.data.api.EnvironmentSummary
 import app.arcane.android.data.settings.ArcaneSettings
 import app.arcane.android.data.settings.SettingsDataStore
+import app.arcane.android.domain.model.ArcaneEnvironment
 import app.arcane.android.domain.model.ArcaneStatus
 import app.arcane.android.domain.repository.ArcaneRepository
 import kotlinx.coroutines.flow.Flow
@@ -12,11 +15,30 @@ import javax.inject.Singleton
 @Singleton
 class DefaultArcaneRepository @Inject constructor(
     private val settingsDataStore: SettingsDataStore,
+    private val apiClient: ArcaneApiClient,
 ) : ArcaneRepository {
     override fun observeStatus(): Flow<ArcaneStatus> = settingsDataStore.settings.map { settings ->
         settings.toArcaneStatus()
     }
+
+    override suspend fun listEnvironments(): Result<List<ArcaneEnvironment>> = runCatching {
+        apiClient.listEnvironments().data.map { summary -> summary.toArcaneEnvironment() }
+    }
+
+    override suspend fun selectEnvironment(environmentId: String) {
+        settingsDataStore.selectEnvironment(environmentId)
+    }
 }
+
+internal fun EnvironmentSummary.toArcaneEnvironment(): ArcaneEnvironment = ArcaneEnvironment(
+    id = id,
+    name = name,
+    apiUrl = apiUrl,
+    status = status,
+    enabled = enabled,
+    isEdge = isEdge,
+    lastSeen = lastSeen,
+)
 
 internal fun ArcaneSettings.toArcaneStatus(): ArcaneStatus {
     val serverOrigin = serverOrigin
@@ -44,5 +66,6 @@ internal fun ArcaneSettings.toArcaneStatus(): ArcaneStatus {
     return ArcaneStatus(
         title = "Arcane Manager ready",
         message = "Server: $serverOrigin. Signed in as ${session.username}. $environmentCopy",
+        selectedEnvironmentId = selectedEnvironmentId,
     )
 }

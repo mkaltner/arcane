@@ -6,4 +6,5 @@ import kotlinx.serialization.Serializable
 data class ArcaneStatus(
     val title: String,
     val message: String,
+    val selectedEnvironmentId: String? = null,
 )

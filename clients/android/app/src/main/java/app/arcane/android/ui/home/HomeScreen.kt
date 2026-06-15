@@ -2,6 +2,7 @@ package app.arcane.android.ui.home
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -30,6 +31,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.arcane.android.domain.model.ArcaneEnvironment
 import app.arcane.android.domain.model.ArcaneStatus
 import app.arcane.android.ui.theme.ArcaneColors
 import app.arcane.android.ui.theme.ArcaneTheme
@@ -41,7 +43,6 @@ data class HomeDashboardSection(
 )
 
 fun authenticatedDashboardSections(): List<HomeDashboardSection> = listOf(
-    HomeDashboardSection("Environments", "Select the Arcane environment to inspect", "Next"),
     HomeDashboardSection("Containers", "Browse containers after an environment is selected", "Queued"),
     HomeDashboardSection("Images", "Review images and related metadata", "Queued"),
     HomeDashboardSection("Actions", "Start, stop, and restart resources with confirmation", "Planned"),
@@ -52,16 +53,27 @@ fun HomeRoute(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    HomeScreen(uiState = uiState)
+    HomeScreen(
+        uiState = uiState,
+        onEnvironmentSelected = viewModel::selectEnvironment,
+        onRetryEnvironments = viewModel::refreshEnvironments,
+    )
 }
 
 @Composable
-fun HomeScreen(uiState: HomeUiState) {
+fun HomeScreen(
+    uiState: HomeUiState,
+    onEnvironmentSelected: (String) -> Unit = {},
+    onRetryEnvironments: () -> Unit = {},
+) {
     Scaffold(containerColor = ArcaneColors.Background) { innerPadding ->
         when (uiState) {
             HomeUiState.Loading -> LoadingContent(modifier = Modifier.padding(innerPadding))
             is HomeUiState.Ready -> ReadyContent(
                 status = uiState.status,
+                environments = uiState.environments,
+                onEnvironmentSelected = onEnvironmentSelected,
+                onRetryEnvironments = onRetryEnvironments,
                 modifier = Modifier.padding(innerPadding),
             )
         }
@@ -84,7 +96,13 @@ private fun LoadingContent(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun ReadyContent(status: ArcaneStatus, modifier: Modifier = Modifier) {
+private fun ReadyContent(
+    status: ArcaneStatus,
+    environments: EnvironmentListUiState,
+    onEnvironmentSelected: (String) -> Unit,
+    onRetryEnvironments: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -97,6 +115,13 @@ private fun ReadyContent(status: ArcaneStatus, modifier: Modifier = Modifier) {
         }
         item {
             NextStepCard()
+        }
+        item {
+            EnvironmentListCard(
+                state = environments,
+                onEnvironmentSelected = onEnvironmentSelected,
+                onRetry = onRetryEnvironments,
+            )
         }
         items(authenticatedDashboardSections()) { section -> SectionCard(section) }
     }
@@ -157,6 +182,160 @@ private fun NextStepCard() {
 }
 
 @Composable
+private fun EnvironmentListCard(
+    state: EnvironmentListUiState,
+    onEnvironmentSelected: (String) -> Unit,
+    onRetry: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = ArcaneColors.SurfaceElevated),
+        border = BorderStroke(1.dp, ArcaneColors.Border),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Environments",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = ArcaneColors.TextPrimary,
+                    )
+                    Text(
+                        text = "Loaded from /api/environments",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ArcaneColors.TextSecondary,
+                    )
+                }
+                StatusPill(text = environmentListStatus(state))
+            }
+            when (state) {
+                EnvironmentListUiState.Loading -> EnvironmentLoadingRow()
+                EnvironmentListUiState.Empty -> Text(
+                    text = "No environments are available for this account yet.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = ArcaneColors.TextSecondary,
+                )
+                is EnvironmentListUiState.Error -> ErrorRow(message = state.message, onRetry = onRetry)
+                is EnvironmentListUiState.Content -> state.environments.forEach { environment ->
+                    EnvironmentRow(
+                        environment = environment,
+                        selected = environment.id == state.selectedEnvironmentId,
+                        onClick = { onEnvironmentSelected(environment.id) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EnvironmentLoadingRow() {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        CircularProgressIndicator(color = ArcaneColors.PrimaryPurple)
+        Text(text = "Loading environments…", color = ArcaneColors.TextSecondary)
+    }
+}
+
+@Composable
+private fun ErrorRow(message: String, onRetry: () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = ArcaneColors.ErrorRed,
+        )
+        Card(
+            modifier = Modifier.clickable(onClick = onRetry),
+            shape = RoundedCornerShape(999.dp),
+            colors = CardDefaults.cardColors(containerColor = ArcaneColors.PrimaryPurpleContainer),
+            border = BorderStroke(1.dp, ArcaneColors.PrimaryPurple.copy(alpha = 0.35f)),
+        ) {
+            Text(
+                text = "Retry",
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                color = ArcaneColors.PrimaryPurple,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+    }
+}
+
+@Composable
+private fun EnvironmentRow(
+    environment: ArcaneEnvironment,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val borderColor = if (selected) ArcaneColors.PrimaryPurple else ArcaneColors.Border
+    val containerColor = if (selected) ArcaneColors.PrimaryPurpleContainer else ArcaneColors.Surface
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        border = BorderStroke(1.dp, borderColor),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = environment.name.ifBlank { environment.id },
+                    style = MaterialTheme.typography.titleSmall,
+                    color = ArcaneColors.TextPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                StatusPill(text = environmentBadge(environment, selected))
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = environment.apiUrl,
+                style = MaterialTheme.typography.bodySmall,
+                color = ArcaneColors.TextSecondary,
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = environment.status.replaceFirstChar { char -> char.uppercase() },
+                style = MaterialTheme.typography.bodySmall,
+                color = if (environment.enabled) ArcaneColors.SuccessGreen else ArcaneColors.TextSecondary,
+            )
+        }
+    }
+}
+
+private fun environmentListStatus(state: EnvironmentListUiState): String = when (state) {
+    EnvironmentListUiState.Loading -> "Loading"
+    EnvironmentListUiState.Empty -> "Empty"
+    is EnvironmentListUiState.Error -> "Error"
+    is EnvironmentListUiState.Content -> "Ready"
+}
+
+private fun environmentBadge(environment: ArcaneEnvironment, selected: Boolean): String = when {
+    selected -> "Selected"
+    environment.isEdge -> "Edge"
+    environment.enabled -> "Ready"
+    else -> "Disabled"
+}
+
+@Composable
 private fun SectionCard(section: HomeDashboardSection) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -207,8 +386,9 @@ private fun sectionColor(status: String) = when (status) {
 @Composable
 private fun StatusPill(text: String) {
     val (container, content) = when (text) {
-        "Next" -> ArcaneColors.SuccessGreenContainer to ArcaneColors.SuccessGreen
-        "Queued" -> ArcaneColors.SurfaceMuted to ArcaneColors.PortBlue
+        "Selected", "Ready", "Next" -> ArcaneColors.SuccessGreenContainer to ArcaneColors.SuccessGreen
+        "Queued", "Edge", "Loading" -> ArcaneColors.SurfaceMuted to ArcaneColors.PortBlue
+        "Error" -> ArcaneColors.SurfaceMuted to ArcaneColors.ErrorRed
         else -> ArcaneColors.PrimaryPurpleContainer to ArcaneColors.PrimaryPurple
     }
     Card(
@@ -232,9 +412,23 @@ private fun HomeScreenPreview() {
     ArcaneTheme(darkTheme = true) {
         HomeScreen(
             uiState = HomeUiState.Ready(
-                ArcaneStatus(
+                status = ArcaneStatus(
                     title = "Arcane Manager ready",
                     message = "Server: https://arcane.example.com. Signed in as demo. Choose an environment to continue.",
+                    selectedEnvironmentId = "local",
+                ),
+                environments = EnvironmentListUiState.Content(
+                    environments = listOf(
+                        ArcaneEnvironment(
+                            id = "local",
+                            name = "Local Docker",
+                            apiUrl = "unix:///var/run/docker.sock",
+                            status = "online",
+                            enabled = true,
+                            isEdge = false,
+                        ),
+                    ),
+                    selectedEnvironmentId = "local",
                 ),
             ),
         )
