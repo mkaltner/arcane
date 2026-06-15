@@ -244,12 +244,46 @@ data class DeployProjectRequest(
 
 @Serializable
 data class DashboardSnapshot(
-    val containers: JsonElement? = null,
-    val images: JsonElement? = null,
-    val volumes: JsonElement? = null,
-    val networks: JsonElement? = null,
-    val system: JsonElement? = null,
-    val version: JsonElement? = null,
+    val containers: DashboardContainers = DashboardContainers(),
+    val images: DashboardImages = DashboardImages(),
+    val imageUsageCounts: DashboardImageUsageCounts = DashboardImageUsageCounts(),
+    val actionItems: DashboardActionItems = DashboardActionItems(),
+    val settings: JsonElement? = null,
+    val versionInfo: JsonElement? = null,
+)
+
+@Serializable
+data class DashboardContainers(
+    val counts: ContainerStatusCounts = ContainerStatusCounts(),
+    val data: List<JsonElement> = emptyList(),
+    val pagination: PaginationResponse? = null,
+)
+
+@Serializable
+data class DashboardImages(
+    val data: List<JsonElement> = emptyList(),
+    val pagination: PaginationResponse? = null,
+)
+
+@Serializable
+data class DashboardImageUsageCounts(
+    @SerialName("imagesInuse")
+    val imagesInUse: Int = 0,
+    val imagesUnused: Int = 0,
+    val totalImages: Int = 0,
+    val totalImageSize: Long = 0,
+)
+
+@Serializable
+data class DashboardActionItems(
+    val items: List<DashboardActionItem> = emptyList(),
+)
+
+@Serializable
+data class DashboardActionItem(
+    val kind: String,
+    val count: Int = 0,
+    val severity: String = "warning",
 )
 
 typealias DashboardResponse = ApiResponse<DashboardSnapshot>

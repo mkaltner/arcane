@@ -72,6 +72,8 @@ fun HomeScreen(
             is HomeUiState.Ready -> ReadyContent(
                 status = uiState.status,
                 environments = uiState.environments,
+                operationalDashboard = uiState.operationalDashboard,
+                navigationDrawer = uiState.navigationDrawer,
                 onEnvironmentSelected = onEnvironmentSelected,
                 onRetryEnvironments = onRetryEnvironments,
                 modifier = Modifier.padding(innerPadding),
@@ -99,6 +101,8 @@ private fun LoadingContent(modifier: Modifier = Modifier) {
 private fun ReadyContent(
     status: ArcaneStatus,
     environments: EnvironmentListUiState,
+    operationalDashboard: OperationalDashboardState,
+    navigationDrawer: HomeNavigationDrawerState,
     onEnvironmentSelected: (String) -> Unit,
     onRetryEnvironments: () -> Unit,
     modifier: Modifier = Modifier,
@@ -111,10 +115,13 @@ private fun ReadyContent(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
+            NavigationDrawerCard(navigationDrawer)
+        }
+        item {
             HeaderCard(status)
         }
         item {
-            NextStepCard()
+            OperationalDashboardCard(operationalDashboard)
         }
         item {
             EnvironmentListCard(
@@ -125,6 +132,183 @@ private fun ReadyContent(
         }
         items(authenticatedDashboardSections()) { section -> SectionCard(section) }
     }
+}
+
+@Composable
+private fun NavigationDrawerCard(drawer: HomeNavigationDrawerState) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = ArcaneColors.Surface),
+        border = BorderStroke(1.dp, ArcaneColors.Border),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Text(
+                text = "▰ ARCANE",
+                style = MaterialTheme.typography.titleLarge,
+                color = ArcaneColors.PrimaryPurple,
+                fontWeight = FontWeight.Black,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = drawer.environmentName,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = ArcaneColors.TextPrimary,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = drawer.environmentSubtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ArcaneColors.TextSecondary,
+                    )
+                }
+                Text(text = "⌄", color = ArcaneColors.TextSecondary, style = MaterialTheme.typography.titleMedium)
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(text = "Activity Center", color = ArcaneColors.TextPrimary, style = MaterialTheme.typography.bodyMedium)
+                StatusPill(text = drawer.activityCount.toString())
+            }
+            drawer.groups.forEach { group ->
+                NavigationGroupSection(group)
+            }
+        }
+    }
+}
+
+@Composable
+private fun NavigationGroupSection(group: NavigationGroup) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = group.title,
+            style = MaterialTheme.typography.labelMedium,
+            color = ArcaneColors.TextSecondary,
+            fontWeight = FontWeight.SemiBold,
+        )
+        group.items.forEach { item -> NavigationItemRow(item) }
+    }
+}
+
+@Composable
+private fun NavigationItemRow(item: NavigationItem) {
+    val rowColor = if (item.selected) ArcaneColors.SurfaceElevated else ArcaneColors.Surface
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(containerColor = rowColor),
+        border = if (item.selected) BorderStroke(1.dp, ArcaneColors.Border) else null,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = item.label,
+                color = ArcaneColors.TextPrimary,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (item.selected) FontWeight.SemiBold else FontWeight.Normal,
+            )
+            if (item.expandable) {
+                Text(text = "›", color = ArcaneColors.TextSecondary, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+    }
+}
+
+@Composable
+private fun OperationalDashboardCard(dashboard: OperationalDashboardState) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = ArcaneColors.SurfaceElevated),
+        border = BorderStroke(1.dp, ArcaneColors.Border),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Operational dashboard",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = ArcaneColors.TextPrimary,
+                    )
+                    Text(
+                        text = "Environment: ${dashboard.selectedEnvironmentName}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ArcaneColors.TextSecondary,
+                    )
+                }
+                StatusPill(text = dashboard.snapshotState.statusLabel())
+            }
+            when (dashboard.snapshotState) {
+                DashboardSnapshotUiState.Loading -> EnvironmentLoadingRow()
+                is DashboardSnapshotUiState.Error -> Text(
+                    text = dashboard.snapshotState.message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = ArcaneColors.ErrorRed,
+                )
+                is DashboardSnapshotUiState.Content -> dashboard.metrics.forEach { metric ->
+                    DashboardMetricRow(metric)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DashboardMetricRow(metric: DashboardMetric) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = metric.label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = ArcaneColors.TextPrimary,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(text = metric.detail, style = MaterialTheme.typography.bodySmall, color = ArcaneColors.TextSecondary)
+        }
+        Text(
+            text = metric.value,
+            style = MaterialTheme.typography.titleLarge,
+            color = ArcaneColors.PrimaryPurple,
+            fontWeight = FontWeight.Bold,
+        )
+    }
+}
+
+private fun DashboardSnapshotUiState.statusLabel(): String = when (this) {
+    DashboardSnapshotUiState.Loading -> "Loading"
+    is DashboardSnapshotUiState.Content -> "Ready"
+    is DashboardSnapshotUiState.Error -> "Error"
 }
 
 @Composable

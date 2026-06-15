@@ -20,17 +20,33 @@ class HomeViewModel @Inject constructor(
     private val repository: ArcaneRepository,
 ) : ViewModel() {
     private val environmentListState = MutableStateFlow<EnvironmentListUiState>(EnvironmentListUiState.Loading)
+    private val dashboardSnapshotState = MutableStateFlow<DashboardSnapshotUiState>(DashboardSnapshotUiState.Loading)
 
     val uiState: StateFlow<HomeUiState> = combine(
         repository.observeStatus(),
         environmentListState,
-    ) { status, environments ->
+        dashboardSnapshotState,
+    ) { status, environments, dashboardSnapshot ->
         val selectedEnvironments = if (environments is EnvironmentListUiState.Content) {
             environments.copy(selectedEnvironmentId = status.selectedEnvironmentId)
         } else {
             environments
         }
-        HomeUiState.Ready(status = status, environments = selectedEnvironments)
+        val selectedEnvironmentId = selectedEnvironments.selectedEnvironmentIdOrNull() ?: status.selectedEnvironmentId
+        val environmentList = selectedEnvironments.environmentsOrEmpty()
+        HomeUiState.Ready(
+            status = status,
+            environments = selectedEnvironments,
+            operationalDashboard = operationalDashboardState(
+                environments = environmentList,
+                selectedEnvironmentId = selectedEnvironmentId,
+                snapshotState = dashboardSnapshot,
+            ),
+            navigationDrawer = homeNavigationDrawerState(
+                environments = environmentList,
+                selectedEnvironmentId = selectedEnvironmentId,
+            ),
+        )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -43,6 +59,7 @@ class HomeViewModel @Inject constructor(
 
     fun refreshEnvironments() {
         environmentListState.value = EnvironmentListUiState.Loading
+        dashboardSnapshotState.value = DashboardSnapshotUiState.Loading
         viewModelScope.launch {
             repository.listEnvironments()
                 .onSuccess { environments ->
@@ -52,11 +69,17 @@ class HomeViewModel @Inject constructor(
                         repository.selectEnvironment(resolvedSelectedId)
                     }
                     environmentListState.value = environmentListContentState(environments, resolvedSelectedId)
+                    if (resolvedSelectedId != null) {
+                        loadDashboard(resolvedSelectedId)
+                    } else {
+                        dashboardSnapshotState.value = DashboardSnapshotUiState.Error("Select an environment to load dashboard resources.")
+                    }
                 }
                 .onFailure { error ->
                     environmentListState.value = EnvironmentListUiState.Error(
                         message = error.message ?: "Unable to load environments.",
                     )
+                    dashboardSnapshotState.value = DashboardSnapshotUiState.Error("Unable to load environments.")
                 }
         }
     }
@@ -71,7 +94,21 @@ class HomeViewModel @Inject constructor(
                     state
                 }
             }
+            loadDashboard(environmentId)
         }
+    }
+
+    private suspend fun loadDashboard(environmentId: String) {
+        dashboardSnapshotState.value = DashboardSnapshotUiState.Loading
+        repository.getDashboard(environmentId)
+            .onSuccess { snapshot ->
+                dashboardSnapshotState.value = DashboardSnapshotUiState.Content(snapshot)
+            }
+            .onFailure { error ->
+                dashboardSnapshotState.value = DashboardSnapshotUiState.Error(
+                    message = error.message ?: "Unable to load dashboard resources.",
+                )
+            }
     }
 }
 
@@ -80,6 +117,15 @@ sealed interface HomeUiState {
     data class Ready(
         val status: ArcaneStatus,
         val environments: EnvironmentListUiState,
+        val operationalDashboard: OperationalDashboardState = operationalDashboardState(
+            environments = emptyList(),
+            selectedEnvironmentId = status.selectedEnvironmentId,
+            snapshotState = DashboardSnapshotUiState.Loading,
+        ),
+        val navigationDrawer: HomeNavigationDrawerState = homeNavigationDrawerState(
+            environments = emptyList(),
+            selectedEnvironmentId = status.selectedEnvironmentId,
+        ),
     ) : HomeUiState
 }
 
@@ -113,3 +159,9 @@ fun selectedEnvironmentIdForList(
     !selectedEnvironmentId.isNullOrBlank() -> selectedEnvironmentId
     else -> environments.first().id
 }
+
+private fun EnvironmentListUiState.environmentsOrEmpty(): List<ArcaneEnvironment> =
+    if (this is EnvironmentListUiState.Content) environments else emptyList()
+
+private fun EnvironmentListUiState.selectedEnvironmentIdOrNull(): String? =
+    if (this is EnvironmentListUiState.Content) selectedEnvironmentId else null
