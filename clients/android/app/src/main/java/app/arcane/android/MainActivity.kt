@@ -7,7 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import app.arcane.android.ui.home.HomeRoute
+import app.arcane.android.ui.app.ArcaneAppRoute
 import app.arcane.android.ui.theme.ArcaneTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -19,7 +19,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             ArcaneTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    HomeRoute()
+                    ArcaneAppRoute()
                 }
             }
         }
