@@ -37,6 +37,7 @@ data class ServerUrl(
 
             val normalizedPath = uri.rawPath
                 ?.trimEnd('/')
+                ?.withoutKnownArcaneRouteSuffix()
                 .orEmpty()
             val authority = uri.rawAuthority ?: throw InvalidServerUrlException("Server URL must include a host")
             val origin = buildString {
@@ -52,6 +53,13 @@ data class ServerUrl(
             )
         }
     }
+}
+
+private fun String.withoutKnownArcaneRouteSuffix(): String {
+    val routeSuffixes = listOf("/dashboard", "/login", "/api")
+    return routeSuffixes.firstOrNull { suffix -> this == suffix || endsWith(suffix) }
+        ?.let { suffix -> removeSuffix(suffix) }
+        ?: this
 }
 
 class InvalidServerUrlException(

@@ -22,6 +22,22 @@ class ServerUrlTest {
     }
 
     @Test
+    fun `strips web app route before deriving api base`() {
+        val config = ServerUrl.parse("https://arcane.v0idlab.net/dashboard")
+
+        assertEquals("https://arcane.v0idlab.net", config.origin)
+        assertEquals("https://arcane.v0idlab.net/api", config.apiBaseUrl)
+    }
+
+    @Test
+    fun `strips api suffix before deriving api base`() {
+        val config = ServerUrl.parse("https://arcane.v0idlab.net/api")
+
+        assertEquals("https://arcane.v0idlab.net", config.origin)
+        assertEquals("https://arcane.v0idlab.net/api", config.apiBaseUrl)
+    }
+
+    @Test
     fun `rejects missing scheme`() {
         assertThrows(InvalidServerUrlException::class.java) {
             ServerUrl.parse("example.com")
