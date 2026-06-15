@@ -226,7 +226,7 @@ private fun NavigationDrawerContent(
     ) {
         item {
             Text(
-                text = "▰ ARCANE",
+                text = "ARCANE",
                 style = MaterialTheme.typography.titleLarge,
                 color = ArcaneColors.PrimaryPurple,
                 fontWeight = FontWeight.Black,
