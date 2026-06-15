@@ -47,7 +47,11 @@ class HomeViewModel @Inject constructor(
             repository.listEnvironments()
                 .onSuccess { environments ->
                     val selectedId = (uiState.value as? HomeUiState.Ready)?.status?.selectedEnvironmentId
-                    environmentListState.value = environmentListContentState(environments, selectedId)
+                    val resolvedSelectedId = selectedEnvironmentIdForList(environments, selectedId)
+                    if (selectedId.isNullOrBlank() && resolvedSelectedId != null) {
+                        repository.selectEnvironment(resolvedSelectedId)
+                    }
+                    environmentListState.value = environmentListContentState(environments, resolvedSelectedId)
                 }
                 .onFailure { error ->
                     environmentListState.value = EnvironmentListUiState.Error(
@@ -97,6 +101,15 @@ fun environmentListContentState(
 } else {
     EnvironmentListUiState.Content(
         environments = environments,
-        selectedEnvironmentId = selectedEnvironmentId,
+        selectedEnvironmentId = selectedEnvironmentIdForList(environments, selectedEnvironmentId),
     )
+}
+
+fun selectedEnvironmentIdForList(
+    environments: List<ArcaneEnvironment>,
+    selectedEnvironmentId: String?,
+): String? = when {
+    environments.isEmpty() -> null
+    !selectedEnvironmentId.isNullOrBlank() -> selectedEnvironmentId
+    else -> environments.first().id
 }
