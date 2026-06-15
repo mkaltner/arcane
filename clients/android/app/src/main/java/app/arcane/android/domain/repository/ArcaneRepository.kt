@@ -1,5 +1,6 @@
 package app.arcane.android.domain.repository
 
+import app.arcane.android.domain.model.ArcaneContainerList
 import app.arcane.android.domain.model.ArcaneDashboardSnapshot
 import app.arcane.android.domain.model.ArcaneEnvironment
 import app.arcane.android.domain.model.ArcaneStatus
@@ -9,5 +10,6 @@ interface ArcaneRepository {
     fun observeStatus(): Flow<ArcaneStatus>
     suspend fun listEnvironments(): Result<List<ArcaneEnvironment>>
     suspend fun getDashboard(environmentId: String): Result<ArcaneDashboardSnapshot>
+    suspend fun listContainers(environmentId: String): Result<ArcaneContainerList>
     suspend fun selectEnvironment(environmentId: String)
 }

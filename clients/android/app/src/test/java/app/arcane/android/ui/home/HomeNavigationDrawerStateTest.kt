@@ -42,7 +42,7 @@ class HomeNavigationDrawerStateTest {
                 NavigationGroup(
                     title = "Management",
                     items = listOf(
-                        NavigationItem("Dashboard", selected = true),
+                        NavigationItem("Dashboard", destination = HomeDestination.Dashboard, selected = true),
                         NavigationItem("Projects"),
                         NavigationItem("Environments", expandable = true),
                         NavigationItem("Customization", expandable = true),
@@ -51,7 +51,7 @@ class HomeNavigationDrawerStateTest {
                 NavigationGroup(
                     title = "Resources",
                     items = listOf(
-                        NavigationItem("Containers"),
+                        NavigationItem("Containers", destination = HomeDestination.Containers),
                         NavigationItem("Images", expandable = true),
                         NavigationItem("Updates"),
                         NavigationItem("Networks", expandable = true),

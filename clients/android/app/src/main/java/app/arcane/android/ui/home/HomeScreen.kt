@@ -56,6 +56,7 @@ fun HomeRoute(
     HomeScreen(
         uiState = uiState,
         onEnvironmentSelected = viewModel::selectEnvironment,
+        onDestinationSelected = viewModel::selectDestination,
         onRetryEnvironments = viewModel::refreshEnvironments,
     )
 }
@@ -64,6 +65,7 @@ fun HomeRoute(
 fun HomeScreen(
     uiState: HomeUiState,
     onEnvironmentSelected: (String) -> Unit = {},
+    onDestinationSelected: (HomeDestination) -> Unit = {},
     onRetryEnvironments: () -> Unit = {},
 ) {
     when (uiState) {
@@ -73,6 +75,7 @@ fun HomeScreen(
         is HomeUiState.Ready -> ReadyScaffold(
             uiState = uiState,
             onEnvironmentSelected = onEnvironmentSelected,
+            onDestinationSelected = onDestinationSelected,
             onRetryEnvironments = onRetryEnvironments,
         )
     }
@@ -82,6 +85,7 @@ fun HomeScreen(
 private fun ReadyScaffold(
     uiState: HomeUiState.Ready,
     onEnvironmentSelected: (String) -> Unit,
+    onDestinationSelected: (HomeDestination) -> Unit,
     onRetryEnvironments: () -> Unit,
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -96,6 +100,10 @@ private fun ReadyScaffold(
                         onEnvironmentSelected(environmentId)
                         scope.launch { drawerState.close() }
                     },
+                    onDestinationSelected = { destination ->
+                        onDestinationSelected(destination)
+                        scope.launch { drawerState.close() }
+                    },
                 )
             }
         },
@@ -104,7 +112,10 @@ private fun ReadyScaffold(
             ReadyContent(
                 operationalDashboard = uiState.operationalDashboard,
                 navigationDrawer = uiState.navigationDrawer,
+                selectedDestination = uiState.selectedDestination,
+                containers = uiState.containers,
                 onOpenDrawer = { scope.launch { drawerState.open() } },
+                onDestinationSelected = onDestinationSelected,
                 modifier = Modifier.padding(innerPadding),
             )
         }
@@ -130,7 +141,10 @@ private fun LoadingContent(modifier: Modifier = Modifier) {
 private fun ReadyContent(
     operationalDashboard: OperationalDashboardState,
     navigationDrawer: HomeNavigationDrawerState,
+    selectedDestination: HomeDestination,
+    containers: ContainersScreenState,
     onOpenDrawer: () -> Unit,
+    onDestinationSelected: (HomeDestination) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -146,19 +160,55 @@ private fun ReadyContent(
                 onClick = onOpenDrawer,
             )
         }
-        item {
-            OperationalDashboardCard(operationalDashboard)
-        }
-        if (operationalDashboard.resourceEntries.isNotEmpty()) {
-            item {
-                Text(
-                    text = "RESOURCE VIEWS",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = ArcaneColors.TextSecondary,
-                    fontWeight = FontWeight.Bold,
-                )
+        when (selectedDestination) {
+            HomeDestination.Dashboard -> {
+                item { OperationalDashboardCard(operationalDashboard) }
+                if (operationalDashboard.resourceEntries.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = "RESOURCE VIEWS",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = ArcaneColors.TextSecondary,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                    items(operationalDashboard.resourceEntries) { resource ->
+                        ResourceEntryCard(
+                            resource = resource,
+                            onClick = {
+                                if (resource.destination != null) onDestinationSelected(resource.destination)
+                            },
+                        )
+                    }
+                }
             }
-            items(operationalDashboard.resourceEntries) { resource -> ResourceEntryCard(resource) }
+            HomeDestination.Containers -> {
+                item { ContainersScreenHeader(containers) }
+                item { ResourceStatsRow(containers.stats) }
+                when (val containersState = containers.state) {
+                    ContainerListUiState.Loading -> item { EnvironmentLoadingRow() }
+                    is ContainerListUiState.Error -> item {
+                        Text(
+                            text = containersState.message,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = ArcaneColors.ErrorRed,
+                        )
+                    }
+                    is ContainerListUiState.Content -> {
+                        if (containers.rows.isEmpty()) {
+                            item {
+                                Text(
+                                    text = "No containers found in this environment.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = ArcaneColors.TextSecondary,
+                                )
+                            }
+                        } else {
+                            items(containers.rows) { row -> ContainerRowCard(row) }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -214,6 +264,7 @@ private fun MenuHandleCard(drawer: HomeNavigationDrawerState, onClick: () -> Uni
 private fun NavigationDrawerContent(
     drawer: HomeNavigationDrawerState,
     onEnvironmentSelected: (String) -> Unit,
+    onDestinationSelected: (HomeDestination) -> Unit,
 ) {
     var environmentsExpanded by remember { mutableStateOf(false) }
     LazyColumn(
@@ -270,7 +321,7 @@ private fun NavigationDrawerContent(
             }
         }
         items(drawer.groups) { group ->
-            NavigationGroupSection(group)
+            NavigationGroupSection(group, onDestinationSelected)
         }
     }
 }
@@ -357,7 +408,7 @@ private fun EnvironmentSelectorOptionRow(
 }
 
 @Composable
-private fun NavigationGroupSection(group: NavigationGroup) {
+private fun NavigationGroupSection(group: NavigationGroup, onDestinationSelected: (HomeDestination) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
             text = group.title,
@@ -365,15 +416,19 @@ private fun NavigationGroupSection(group: NavigationGroup) {
             color = ArcaneColors.TextSecondary,
             fontWeight = FontWeight.SemiBold,
         )
-        group.items.forEach { item -> NavigationItemRow(item) }
+        group.items.forEach { item -> NavigationItemRow(item, onDestinationSelected) }
     }
 }
 
 @Composable
-private fun NavigationItemRow(item: NavigationItem) {
+private fun NavigationItemRow(item: NavigationItem, onDestinationSelected: (HomeDestination) -> Unit) {
     val rowColor = if (item.selected) ArcaneColors.SurfaceElevated else ArcaneColors.Surface
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = item.destination != null) {
+                item.destination?.let(onDestinationSelected)
+            },
         shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(containerColor = rowColor),
         border = if (item.selected) BorderStroke(1.dp, ArcaneColors.Border) else null,
@@ -659,9 +714,11 @@ private fun environmentBadge(environment: ArcaneEnvironment, selected: Boolean):
 }
 
 @Composable
-private fun ResourceEntryCard(resource: DashboardResourceEntry) {
+private fun ResourceEntryCard(resource: DashboardResourceEntry, onClick: () -> Unit = {}) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = ArcaneColors.SurfaceElevated),
         border = BorderStroke(1.dp, ArcaneColors.Border),
@@ -701,10 +758,110 @@ private fun ResourceEntryCard(resource: DashboardResourceEntry) {
 }
 
 @Composable
+private fun ContainersScreenHeader(containers: ContainersScreenState) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = ArcaneColors.SurfaceElevated),
+        border = BorderStroke(1.dp, ArcaneColors.Border),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = containers.title,
+                style = MaterialTheme.typography.titleLarge,
+                color = ArcaneColors.TextPrimary,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = "Environment: ${containers.selectedEnvironmentName}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = ArcaneColors.TextSecondary,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ResourceStatsRow(stats: List<ResourceStatCard>) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        stats.forEach { stat ->
+            Card(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = ArcaneColors.SurfaceElevated),
+                border = BorderStroke(1.dp, ArcaneColors.Border),
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(
+                        text = stat.label,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = ArcaneColors.TextSecondary,
+                    )
+                    Text(
+                        text = stat.value,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = ArcaneColors.PrimaryPurple,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContainerRowCard(row: ContainerRowState) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = ArcaneColors.SurfaceElevated),
+        border = BorderStroke(1.dp, ArcaneColors.Border),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = row.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = ArcaneColors.TextPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = row.image.ifBlank { "No image" },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = ArcaneColors.TextSecondary,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = row.status,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = ArcaneColors.TextSecondary,
+                )
+            }
+            StatusPill(text = row.badge)
+        }
+    }
+}
+
+@Composable
 private fun StatusPill(text: String) {
     val (container, content) = when (text) {
-        "Selected", "Ready", "Next", "Healthy", "Clear" -> ArcaneColors.SuccessGreenContainer to ArcaneColors.SuccessGreen
-        "Queued", "Edge", "Loading", "Cleanup", "Review" -> ArcaneColors.SurfaceMuted to ArcaneColors.PortBlue
+        "Selected", "Ready", "Next", "Healthy", "Clear", "Running" -> ArcaneColors.SuccessGreenContainer to ArcaneColors.SuccessGreen
+        "Queued", "Edge", "Loading", "Cleanup", "Review", "Stopped" -> ArcaneColors.SurfaceMuted to ArcaneColors.PortBlue
         "Error", "Attention" -> ArcaneColors.SurfaceMuted to ArcaneColors.ErrorRed
         else -> ArcaneColors.PrimaryPurpleContainer to ArcaneColors.PrimaryPurple
     }

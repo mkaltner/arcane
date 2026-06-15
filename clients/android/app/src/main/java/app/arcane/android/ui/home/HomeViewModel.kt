@@ -21,12 +21,16 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
     private val environmentListState = MutableStateFlow<EnvironmentListUiState>(EnvironmentListUiState.Loading)
     private val dashboardSnapshotState = MutableStateFlow<DashboardSnapshotUiState>(DashboardSnapshotUiState.Loading)
+    private val containerListState = MutableStateFlow<ContainerListUiState>(ContainerListUiState.Loading)
+    private val selectedDestination = MutableStateFlow(HomeDestination.Dashboard)
 
     val uiState: StateFlow<HomeUiState> = combine(
         repository.observeStatus(),
         environmentListState,
         dashboardSnapshotState,
-    ) { status, environments, dashboardSnapshot ->
+        containerListState,
+        selectedDestination,
+    ) { status, environments, dashboardSnapshot, containers, destination ->
         val selectedEnvironments = if (environments is EnvironmentListUiState.Content) {
             environments.copy(selectedEnvironmentId = status.selectedEnvironmentId)
         } else {
@@ -34,17 +38,24 @@ class HomeViewModel @Inject constructor(
         }
         val selectedEnvironmentId = selectedEnvironments.selectedEnvironmentIdOrNull() ?: status.selectedEnvironmentId
         val environmentList = selectedEnvironments.environmentsOrEmpty()
+        val operationalDashboard = operationalDashboardState(
+            environments = environmentList,
+            selectedEnvironmentId = selectedEnvironmentId,
+            snapshotState = dashboardSnapshot,
+        )
         HomeUiState.Ready(
             status = status,
             environments = selectedEnvironments,
-            operationalDashboard = operationalDashboardState(
-                environments = environmentList,
-                selectedEnvironmentId = selectedEnvironmentId,
-                snapshotState = dashboardSnapshot,
-            ),
+            operationalDashboard = operationalDashboard,
             navigationDrawer = homeNavigationDrawerState(
                 environments = environmentList,
                 selectedEnvironmentId = selectedEnvironmentId,
+                selectedDestination = destination,
+            ),
+            selectedDestination = destination,
+            containers = containersScreenState(
+                selectedEnvironmentName = operationalDashboard.selectedEnvironmentName,
+                containersState = containers,
             ),
         )
     }.stateIn(
@@ -60,6 +71,7 @@ class HomeViewModel @Inject constructor(
     fun refreshEnvironments() {
         environmentListState.value = EnvironmentListUiState.Loading
         dashboardSnapshotState.value = DashboardSnapshotUiState.Loading
+        containerListState.value = ContainerListUiState.Loading
         viewModelScope.launch {
             repository.listEnvironments()
                 .onSuccess { environments ->
@@ -71,8 +83,12 @@ class HomeViewModel @Inject constructor(
                     environmentListState.value = environmentListContentState(environments, resolvedSelectedId)
                     if (resolvedSelectedId != null) {
                         loadDashboard(resolvedSelectedId)
+                        if (selectedDestination.value == HomeDestination.Containers) {
+                            loadContainers(resolvedSelectedId)
+                        }
                     } else {
                         dashboardSnapshotState.value = DashboardSnapshotUiState.Error("Select an environment to load dashboard resources.")
+                        containerListState.value = ContainerListUiState.Error("Select an environment to load containers.")
                     }
                 }
                 .onFailure { error ->
@@ -80,6 +96,7 @@ class HomeViewModel @Inject constructor(
                         message = error.message ?: "Unable to load environments.",
                     )
                     dashboardSnapshotState.value = DashboardSnapshotUiState.Error("Unable to load environments.")
+                    containerListState.value = ContainerListUiState.Error("Unable to load environments.")
                 }
         }
     }
@@ -95,6 +112,21 @@ class HomeViewModel @Inject constructor(
                 }
             }
             loadDashboard(environmentId)
+            if (selectedDestination.value == HomeDestination.Containers) {
+                loadContainers(environmentId)
+            }
+        }
+    }
+
+    fun selectDestination(destination: HomeDestination) {
+        selectedDestination.value = destination
+        if (destination == HomeDestination.Containers) {
+            val environmentId = (uiState.value as? HomeUiState.Ready)?.navigationDrawer?.selectedEnvironmentId
+            if (environmentId != null) {
+                viewModelScope.launch { loadContainers(environmentId) }
+            } else {
+                containerListState.value = ContainerListUiState.Error("Select an environment to load containers.")
+            }
         }
     }
 
@@ -107,6 +139,19 @@ class HomeViewModel @Inject constructor(
             .onFailure { error ->
                 dashboardSnapshotState.value = DashboardSnapshotUiState.Error(
                     message = error.message ?: "Unable to load dashboard resources.",
+                )
+            }
+    }
+
+    private suspend fun loadContainers(environmentId: String) {
+        containerListState.value = ContainerListUiState.Loading
+        repository.listContainers(environmentId)
+            .onSuccess { list ->
+                containerListState.value = list.toContainerListUiState()
+            }
+            .onFailure { error ->
+                containerListState.value = ContainerListUiState.Error(
+                    message = error.message ?: "Unable to load containers.",
                 )
             }
     }
@@ -125,6 +170,11 @@ sealed interface HomeUiState {
         val navigationDrawer: HomeNavigationDrawerState = homeNavigationDrawerState(
             environments = emptyList(),
             selectedEnvironmentId = status.selectedEnvironmentId,
+        ),
+        val selectedDestination: HomeDestination = HomeDestination.Dashboard,
+        val containers: ContainersScreenState = containersScreenState(
+            selectedEnvironmentName = status.selectedEnvironmentId.orEmpty(),
+            containersState = ContainerListUiState.Loading,
         ),
     ) : HomeUiState
 }

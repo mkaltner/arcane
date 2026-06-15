@@ -1,8 +1,16 @@
 package app.arcane.android.ui.home
 
 import app.arcane.android.domain.model.ArcaneDashboardSnapshot
+import app.arcane.android.domain.model.ArcaneContainer
+import app.arcane.android.domain.model.ArcaneContainerList
 import app.arcane.android.domain.model.ArcaneEnvironment
+import app.arcane.android.domain.model.ContainerStatusSummary
 import java.util.Locale
+
+enum class HomeDestination {
+    Dashboard,
+    Containers,
+}
 
 sealed interface DashboardSnapshotUiState {
     data object Loading : DashboardSnapshotUiState
@@ -21,6 +29,7 @@ data class DashboardResourceEntry(
     val value: String,
     val description: String,
     val badge: String,
+    val destination: HomeDestination? = null,
 )
 
 data class OperationalDashboardState(
@@ -53,8 +62,35 @@ data class NavigationGroup(
 
 data class NavigationItem(
     val label: String,
+    val destination: HomeDestination? = null,
     val selected: Boolean = false,
     val expandable: Boolean = false,
+)
+
+sealed interface ContainerListUiState {
+    data object Loading : ContainerListUiState
+    data class Content(
+        val containers: List<ArcaneContainer>,
+        val counts: ContainerStatusSummary?,
+    ) : ContainerListUiState
+    data class Error(val message: String) : ContainerListUiState
+}
+
+data class ResourceStatCard(val label: String, val value: String)
+
+data class ContainerRowState(
+    val name: String,
+    val image: String,
+    val status: String,
+    val badge: String,
+)
+
+data class ContainersScreenState(
+    val title: String,
+    val selectedEnvironmentName: String,
+    val state: ContainerListUiState,
+    val stats: List<ResourceStatCard>,
+    val rows: List<ContainerRowState>,
 )
 
 fun operationalDashboardState(
@@ -88,6 +124,7 @@ fun homeNavigationDrawerState(
     environments: List<ArcaneEnvironment>,
     selectedEnvironmentId: String?,
     activityCount: Int = 8,
+    selectedDestination: HomeDestination = HomeDestination.Dashboard,
 ): HomeNavigationDrawerState {
     val selected = environments.firstOrNull { it.id == selectedEnvironmentId } ?: environments.firstOrNull()
     return HomeNavigationDrawerState(
@@ -103,9 +140,40 @@ fun homeNavigationDrawerState(
             )
         },
         activityCount = activityCount,
-        groups = arcaneNavigationGroups(),
+        groups = arcaneNavigationGroups(selectedDestination),
     )
 }
+
+fun containersScreenState(
+    selectedEnvironmentName: String,
+    containersState: ContainerListUiState,
+): ContainersScreenState {
+    val containers = (containersState as? ContainerListUiState.Content)?.containers.orEmpty()
+    val counts = (containersState as? ContainerListUiState.Content)?.counts ?: containers.derivedCounts()
+    return ContainersScreenState(
+        title = "Containers",
+        selectedEnvironmentName = selectedEnvironmentName,
+        state = containersState,
+        stats = listOf(
+            ResourceStatCard("Total", counts.totalContainers.toString()),
+            ResourceStatCard("Running", counts.runningContainers.toString()),
+            ResourceStatCard("Stopped", counts.stoppedContainers.toString()),
+        ),
+        rows = containers.map { container ->
+            ContainerRowState(
+                name = container.name,
+                image = container.image,
+                status = container.status.ifBlank { container.state.ifBlank { "No status" } },
+                badge = if (container.state.equals("running", ignoreCase = true)) "Running" else "Stopped",
+            )
+        },
+    )
+}
+
+fun ArcaneContainerList.toContainerListUiState(): ContainerListUiState = ContainerListUiState.Content(
+    containers = containers,
+    counts = counts,
+)
 
 private fun ArcaneDashboardSnapshot.dashboardMetrics(): List<DashboardMetric> = listOf(
     DashboardMetric(
@@ -136,6 +204,7 @@ private fun ArcaneDashboardSnapshot.resourceEntries(): List<DashboardResourceEnt
         value = containers.totalContainers.toString(),
         description = "${containers.runningContainers} running · ${containers.stoppedContainers} stopped",
         badge = if (containers.stoppedContainers > 0) "Review" else "Healthy",
+        destination = HomeDestination.Containers,
     ),
     DashboardResourceEntry(
         name = "Images",
@@ -151,11 +220,11 @@ private fun ArcaneDashboardSnapshot.resourceEntries(): List<DashboardResourceEnt
     ),
 )
 
-private fun arcaneNavigationGroups(): List<NavigationGroup> = listOf(
+private fun arcaneNavigationGroups(selectedDestination: HomeDestination): List<NavigationGroup> = listOf(
     NavigationGroup(
         title = "Management",
         items = listOf(
-            NavigationItem("Dashboard", selected = true),
+            NavigationItem("Dashboard", destination = HomeDestination.Dashboard, selected = selectedDestination == HomeDestination.Dashboard),
             NavigationItem("Projects"),
             NavigationItem("Environments", expandable = true),
             NavigationItem("Customization", expandable = true),
@@ -164,7 +233,7 @@ private fun arcaneNavigationGroups(): List<NavigationGroup> = listOf(
     NavigationGroup(
         title = "Resources",
         items = listOf(
-            NavigationItem("Containers"),
+            NavigationItem("Containers", destination = HomeDestination.Containers, selected = selectedDestination == HomeDestination.Containers),
             NavigationItem("Images", expandable = true),
             NavigationItem("Updates"),
             NavigationItem("Networks", expandable = true),
@@ -183,6 +252,15 @@ private fun arcaneNavigationGroups(): List<NavigationGroup> = listOf(
         ),
     ),
 )
+
+private fun List<ArcaneContainer>.derivedCounts(): ContainerStatusSummary {
+    val running = count { it.state.equals("running", ignoreCase = true) }
+    return ContainerStatusSummary(
+        runningContainers = running,
+        stoppedContainers = size - running,
+        totalContainers = size,
+    )
+}
 
 private fun Long.formatBytes(): String {
     if (this <= 0L) return "0B"

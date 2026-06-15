@@ -34,7 +34,7 @@ class HomeDashboardSectionsTest {
 
         assertEquals(
             listOf(
-                DashboardResourceEntry("Containers", "9", "7 running · 2 stopped", "Review"),
+                DashboardResourceEntry("Containers", "9", "7 running · 2 stopped", "Review", destination = HomeDestination.Containers),
                 DashboardResourceEntry("Images", "8", "8 in use · 0 unused · 512MB", "Healthy"),
                 DashboardResourceEntry("Action items", "0", "All clear", "Clear"),
             ),

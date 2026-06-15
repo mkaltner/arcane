@@ -1,12 +1,17 @@
 package app.arcane.android.data.repository
 
 import app.arcane.android.data.api.ArcaneApiClient
+import app.arcane.android.data.api.ContainerListResponse
+import app.arcane.android.data.api.ContainerStatusCounts
+import app.arcane.android.data.api.ContainerSummary
 import app.arcane.android.data.api.DashboardActionItem
 import app.arcane.android.data.api.DashboardSnapshot
 import app.arcane.android.data.api.EnvironmentSummary
 import app.arcane.android.data.settings.ArcaneSettings
 import app.arcane.android.data.settings.SettingsDataStore
 import app.arcane.android.domain.model.ActionItemsSummary
+import app.arcane.android.domain.model.ArcaneContainer
+import app.arcane.android.domain.model.ArcaneContainerList
 import app.arcane.android.domain.model.ArcaneDashboardSnapshot
 import app.arcane.android.domain.model.ArcaneEnvironment
 import app.arcane.android.domain.model.ArcaneStatus
@@ -33,6 +38,10 @@ class DefaultArcaneRepository @Inject constructor(
 
     override suspend fun getDashboard(environmentId: String): Result<ArcaneDashboardSnapshot> = runCatching {
         apiClient.getDashboard(environmentId).toArcaneDashboardSnapshot()
+    }
+
+    override suspend fun listContainers(environmentId: String): Result<ArcaneContainerList> = runCatching {
+        apiClient.listContainers(environmentId = environmentId).toArcaneContainerList()
     }
 
     override suspend fun selectEnvironment(environmentId: String) {
@@ -63,6 +72,25 @@ internal fun DashboardSnapshot.toArcaneDashboardSnapshot(): ArcaneDashboardSnaps
         totalImageSize = imageUsageCounts.totalImageSize,
     ),
     actionItems = actionItems.items.toActionItemsSummary(),
+)
+
+internal fun ContainerListResponse.toArcaneContainerList(): ArcaneContainerList = ArcaneContainerList(
+    containers = data.map { it.toArcaneContainer() },
+    counts = counts?.toContainerStatusSummary(),
+)
+
+internal fun ContainerSummary.toArcaneContainer(): ArcaneContainer = ArcaneContainer(
+    id = id,
+    name = names.firstOrNull()?.trimStart('/')?.takeIf { it.isNotBlank() } ?: id.take(12),
+    image = image,
+    state = state,
+    status = status,
+)
+
+private fun ContainerStatusCounts.toContainerStatusSummary(): ContainerStatusSummary = ContainerStatusSummary(
+    runningContainers = runningContainers,
+    stoppedContainers = stoppedContainers,
+    totalContainers = totalContainers,
 )
 
 private fun List<DashboardActionItem>.toActionItemsSummary(): ActionItemsSummary {
