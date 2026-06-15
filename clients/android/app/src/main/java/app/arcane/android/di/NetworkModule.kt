@@ -1,6 +1,13 @@
 package app.arcane.android.di
 
+import app.arcane.android.core.network.ServerUrl
+import app.arcane.android.data.api.ArcaneAuthProvider
+import app.arcane.android.data.api.ArcaneAuthState
+import app.arcane.android.data.api.ArcaneJson
+import app.arcane.android.data.api.ServerUrlProvider
+import app.arcane.android.data.api.createArcaneHttpClient
 import app.arcane.android.data.repository.DefaultArcaneRepository
+import app.arcane.android.data.settings.SettingsDataStore
 import app.arcane.android.domain.repository.ArcaneRepository
 import dagger.Binds
 import dagger.Module
@@ -8,11 +15,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.okhttp.OkHttp
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.defaultRequest
-import io.ktor.http.URLProtocol
-import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 import javax.inject.Singleton
 
@@ -21,23 +24,23 @@ import javax.inject.Singleton
 object NetworkModule {
     @Provides
     @Singleton
-    fun provideJson(): Json = Json {
-        ignoreUnknownKeys = true
-        explicitNulls = false
+    fun provideJson(): Json = ArcaneJson.create()
+
+    @Provides
+    @Singleton
+    fun provideHttpClient(json: Json): HttpClient = createArcaneHttpClient(json)
+
+    @Provides
+    @Singleton
+    fun provideServerUrlProvider(settingsDataStore: SettingsDataStore): ServerUrlProvider = ServerUrlProvider {
+        val origin = settingsDataStore.settings.first().serverOrigin
+        ServerUrl.parse(requireNotNull(origin) { "Arcane server URL is not configured" })
     }
 
     @Provides
     @Singleton
-    fun provideHttpClient(json: Json): HttpClient = HttpClient(OkHttp) {
-        defaultRequest {
-            url {
-                protocol = URLProtocol.HTTPS
-                host = "api.example.com"
-            }
-        }
-        install(ContentNegotiation) {
-            json(json)
-        }
+    fun provideAuthProvider(settingsDataStore: SettingsDataStore): ArcaneAuthProvider = ArcaneAuthProvider {
+        settingsDataStore.settings.first().authSession?.let { ArcaneAuthState.Bearer(it.token) }
     }
 }
 

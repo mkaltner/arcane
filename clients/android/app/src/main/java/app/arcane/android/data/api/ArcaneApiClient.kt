@@ -38,7 +38,7 @@ object ArcaneJson {
     }
 }
 
-interface ServerUrlProvider {
+fun interface ServerUrlProvider {
     suspend fun currentServerUrl(): ServerUrl
 }
 
@@ -54,7 +54,7 @@ sealed class ArcaneAuthState {
     data class BearerAndApiKey(val token: String, val apiKey: String) : ArcaneAuthState()
 }
 
-interface ArcaneAuthProvider {
+fun interface ArcaneAuthProvider {
     suspend fun currentAuthState(): ArcaneAuthState?
 }
 

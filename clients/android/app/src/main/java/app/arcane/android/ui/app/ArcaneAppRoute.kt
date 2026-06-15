@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.arcane.android.ui.auth.AuthRoute
 import app.arcane.android.ui.connect.ConnectRoute
 import app.arcane.android.ui.home.HomeRoute
 
@@ -22,10 +23,11 @@ fun ArcaneAppRoute(
     viewModel: AppViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    when (uiState) {
+    when (val state = uiState) {
         AppUiState.Loading -> AppLoadingScreen()
         AppUiState.NeedsServer -> ConnectRoute()
-        is AppUiState.Ready -> HomeRoute()
+        is AppUiState.NeedsAuthentication -> AuthRoute(serverOrigin = state.serverOrigin)
+        is AppUiState.Authenticated -> HomeRoute()
     }
 }
 
