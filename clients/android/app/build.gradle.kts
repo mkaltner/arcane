@@ -42,6 +42,12 @@ android {
     }
 }
 
+tasks.register("testClasses") {
+    group = "verification"
+    description = "Compatibility lifecycle task for tools that expect the Java plugin's testClasses task."
+    dependsOn("compileDebugUnitTestKotlin", "compileDebugUnitTestJavaWithJavac")
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
