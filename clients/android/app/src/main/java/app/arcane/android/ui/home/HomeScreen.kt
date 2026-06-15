@@ -34,6 +34,19 @@ import app.arcane.android.domain.model.ArcaneStatus
 import app.arcane.android.ui.theme.ArcaneColors
 import app.arcane.android.ui.theme.ArcaneTheme
 
+data class HomeDashboardSection(
+    val name: String,
+    val description: String,
+    val status: String,
+)
+
+fun authenticatedDashboardSections(): List<HomeDashboardSection> = listOf(
+    HomeDashboardSection("Environments", "Select the Arcane environment to inspect", "Next"),
+    HomeDashboardSection("Containers", "Browse containers after an environment is selected", "Queued"),
+    HomeDashboardSection("Images", "Review images and related metadata", "Queued"),
+    HomeDashboardSection("Actions", "Start, stop, and restart resources with confirmation", "Planned"),
+)
+
 @Composable
 fun HomeRoute(
     viewModel: HomeViewModel = hiltViewModel(),
@@ -72,12 +85,6 @@ private fun LoadingContent(modifier: Modifier = Modifier) {
 
 @Composable
 private fun ReadyContent(status: ArcaneStatus, modifier: Modifier = Modifier) {
-    val layers = listOf(
-        "UI" to "Jetpack Compose + Material 3 home shell",
-        "API/Data" to "Ktor client configured with kotlinx serialization",
-        "Domain" to "Repository contract and serializable models",
-        "Settings" to "DataStore preferences placeholder",
-    )
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -88,7 +95,10 @@ private fun ReadyContent(status: ArcaneStatus, modifier: Modifier = Modifier) {
         item {
             HeaderCard(status)
         }
-        items(layers) { (name, description) -> LayerCard(name, description) }
+        item {
+            NextStepCard()
+        }
+        items(authenticatedDashboardSections()) { section -> SectionCard(section) }
     }
 }
 
@@ -121,7 +131,33 @@ private fun HeaderCard(status: ArcaneStatus) {
 }
 
 @Composable
-private fun LayerCard(name: String, description: String) {
+private fun NextStepCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = ArcaneColors.PrimaryPurpleContainer),
+        border = BorderStroke(1.dp, ArcaneColors.PrimaryPurple.copy(alpha = 0.45f)),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(18.dp)) {
+            Text(
+                text = "NEXT STEP",
+                style = MaterialTheme.typography.labelMedium,
+                color = ArcaneColors.PrimaryPurple,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Pick an environment, then we’ll open the resource dashboard.",
+                style = MaterialTheme.typography.titleMedium,
+                color = ArcaneColors.TextPrimary,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SectionCard(section: HomeDashboardSection) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -135,37 +171,55 @@ private fun LayerCard(name: String, description: String) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = name,
+                    text = section.name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = ArcaneColors.TextPrimary,
                 )
-                StatusPill(text = "Ready")
+                StatusPill(text = section.status)
             }
             Spacer(modifier = Modifier.height(10.dp))
-            Text(text = description, style = MaterialTheme.typography.bodyMedium, color = ArcaneColors.TextSecondary)
+            Text(text = section.description, style = MaterialTheme.typography.bodyMedium, color = ArcaneColors.TextSecondary)
             Spacer(modifier = Modifier.height(14.dp))
             LinearProgressIndicator(
-                progress = { 0.72f },
+                progress = { sectionProgress(section.status) },
                 modifier = Modifier.fillMaxWidth(),
-                color = ArcaneColors.PrimaryPurple,
+                color = sectionColor(section.status),
                 trackColor = ArcaneColors.Border,
             )
         }
     }
 }
 
+private fun sectionProgress(status: String): Float = when (status) {
+    "Next" -> 0.86f
+    "Queued" -> 0.42f
+    else -> 0.18f
+}
+
+@Composable
+private fun sectionColor(status: String) = when (status) {
+    "Next" -> ArcaneColors.SuccessGreen
+    "Queued" -> ArcaneColors.PortBlue
+    else -> ArcaneColors.PrimaryPurple
+}
+
 @Composable
 private fun StatusPill(text: String) {
+    val (container, content) = when (text) {
+        "Next" -> ArcaneColors.SuccessGreenContainer to ArcaneColors.SuccessGreen
+        "Queued" -> ArcaneColors.SurfaceMuted to ArcaneColors.PortBlue
+        else -> ArcaneColors.PrimaryPurpleContainer to ArcaneColors.PrimaryPurple
+    }
     Card(
         shape = RoundedCornerShape(999.dp),
-        colors = CardDefaults.cardColors(containerColor = ArcaneColors.SuccessGreenContainer),
-        border = BorderStroke(1.dp, ArcaneColors.SuccessGreen.copy(alpha = 0.35f)),
+        colors = CardDefaults.cardColors(containerColor = container),
+        border = BorderStroke(1.dp, content.copy(alpha = 0.35f)),
     ) {
         Text(
             text = text,
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-            color = ArcaneColors.SuccessGreen,
+            color = content,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
         )
@@ -179,8 +233,8 @@ private fun HomeScreenPreview() {
         HomeScreen(
             uiState = HomeUiState.Ready(
                 ArcaneStatus(
-                    title = "Arcane Manager connected",
-                    message = "Server: https://arcane.example.com. Authentication and environment selection are next.",
+                    title = "Arcane Manager ready",
+                    message = "Server: https://arcane.example.com. Signed in as demo. Choose an environment to continue.",
                 ),
             ),
         )
