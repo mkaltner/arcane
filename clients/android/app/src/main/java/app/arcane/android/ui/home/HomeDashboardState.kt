@@ -16,10 +16,18 @@ data class DashboardMetric(
     val detail: String,
 )
 
+data class DashboardResourceEntry(
+    val name: String,
+    val value: String,
+    val description: String,
+    val badge: String,
+)
+
 data class OperationalDashboardState(
     val selectedEnvironmentName: String,
     val snapshotState: DashboardSnapshotUiState,
     val metrics: List<DashboardMetric>,
+    val resourceEntries: List<DashboardResourceEntry>,
 )
 
 data class HomeNavigationDrawerState(
@@ -62,10 +70,17 @@ fun operationalDashboardState(
         is DashboardSnapshotUiState.Error,
         -> emptyList()
     }
+    val resourceEntries = when (snapshotState) {
+        is DashboardSnapshotUiState.Content -> snapshotState.snapshot.resourceEntries()
+        DashboardSnapshotUiState.Loading,
+        is DashboardSnapshotUiState.Error,
+        -> emptyList()
+    }
     return OperationalDashboardState(
         selectedEnvironmentName = selectedName,
         snapshotState = snapshotState,
         metrics = metrics,
+        resourceEntries = resourceEntries,
     )
 }
 
@@ -112,6 +127,27 @@ private fun ArcaneDashboardSnapshot.dashboardMetrics(): List<DashboardMetric> = 
         label = "Action items",
         value = actionItems.count.toString(),
         detail = actionItems.summary,
+    ),
+)
+
+private fun ArcaneDashboardSnapshot.resourceEntries(): List<DashboardResourceEntry> = listOf(
+    DashboardResourceEntry(
+        name = "Containers",
+        value = containers.totalContainers.toString(),
+        description = "${containers.runningContainers} running · ${containers.stoppedContainers} stopped",
+        badge = if (containers.stoppedContainers > 0) "Review" else "Healthy",
+    ),
+    DashboardResourceEntry(
+        name = "Images",
+        value = images.totalImages.toString(),
+        description = "${images.imagesInUse} in use · ${images.imagesUnused} unused · ${images.totalImageSize.formatBytes()}",
+        badge = if (images.imagesUnused > 0) "Cleanup" else "Healthy",
+    ),
+    DashboardResourceEntry(
+        name = "Action items",
+        value = actionItems.count.toString(),
+        description = actionItems.summary,
+        badge = if (actionItems.count > 0) "Attention" else "Clear",
     ),
 )
 

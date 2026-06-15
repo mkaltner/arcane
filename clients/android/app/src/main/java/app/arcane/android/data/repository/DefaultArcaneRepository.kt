@@ -101,13 +101,13 @@ internal fun ArcaneSettings.toArcaneStatus(): ArcaneStatus {
     }
 
     val environmentCopy = if (selectedEnvironmentId.isNullOrBlank()) {
-        "Choose an environment to continue."
+        "Choose an environment to load dashboard resources."
     } else {
-        "Environment: $selectedEnvironmentId. Resource views are next."
+        "Environment: $selectedEnvironmentId. Loading containers, images, storage, and action items."
     }
 
     return ArcaneStatus(
-        title = "Arcane Manager ready",
+        title = "Dashboard overview",
         message = "Server: $serverOrigin. Signed in as ${session.username}. $environmentCopy",
         selectedEnvironmentId = selectedEnvironmentId,
     )

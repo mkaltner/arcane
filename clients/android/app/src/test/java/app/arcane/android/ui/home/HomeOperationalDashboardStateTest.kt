@@ -50,6 +50,14 @@ class HomeOperationalDashboardStateTest {
             ),
             dashboard.metrics,
         )
+        assertEquals(
+            listOf(
+                DashboardResourceEntry("Containers", "5", "5 running · 0 stopped", "Healthy"),
+                DashboardResourceEntry("Images", "10", "4 in use · 6 unused · 1.8GB", "Cleanup"),
+                DashboardResourceEntry("Action items", "1", "1 Security", "Attention"),
+            ),
+            dashboard.resourceEntries,
+        )
     }
 
     @Test

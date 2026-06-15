@@ -20,11 +20,11 @@ class ArcaneStatusMappingTest {
             ),
         ).toArcaneStatus()
 
-        assertEquals("Arcane Manager ready", status.title)
+        assertEquals("Dashboard overview", status.title)
         assertTrue(status.message.contains("Server: https://arcane.example"))
         assertTrue(status.message.contains("Signed in as demo"))
-        assertTrue(status.message.contains("Choose an environment to continue"))
-        assertFalse(status.message.contains("Authentication and environment selection are next"))
+        assertTrue(status.message.contains("Choose an environment to load dashboard resources"))
+        assertFalse(status.message.contains("Resource views are next"))
     }
 
     @Test

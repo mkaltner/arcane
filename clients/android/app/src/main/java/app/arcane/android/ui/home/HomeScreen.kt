@@ -19,7 +19,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
@@ -44,18 +43,6 @@ import app.arcane.android.domain.model.ArcaneStatus
 import app.arcane.android.ui.theme.ArcaneColors
 import app.arcane.android.ui.theme.ArcaneTheme
 import kotlinx.coroutines.launch
-
-data class HomeDashboardSection(
-    val name: String,
-    val description: String,
-    val status: String,
-)
-
-fun authenticatedDashboardSections(): List<HomeDashboardSection> = listOf(
-    HomeDashboardSection("Containers", "Browse containers after an environment is selected", "Queued"),
-    HomeDashboardSection("Images", "Review images and related metadata", "Queued"),
-    HomeDashboardSection("Actions", "Start, stop, and restart resources with confirmation", "Planned"),
-)
 
 @Composable
 fun HomeRoute(
@@ -163,7 +150,17 @@ private fun ReadyContent(
         item {
             OperationalDashboardCard(operationalDashboard)
         }
-        items(authenticatedDashboardSections()) { section -> SectionCard(section) }
+        if (operationalDashboard.resourceEntries.isNotEmpty()) {
+            item {
+                Text(
+                    text = "RESOURCE VIEWS",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = ArcaneColors.TextSecondary,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            items(operationalDashboard.resourceEntries) { resource -> ResourceEntryCard(resource) }
+        }
     }
 }
 
@@ -246,7 +243,10 @@ private fun NavigationDrawerContent(
             items(drawer.environmentOptions) { option ->
                 EnvironmentSelectorOptionRow(
                     option = option,
-                    onClick = { onEnvironmentSelected(option.id) },
+                    onClick = {
+                        environmentsExpanded = false
+                        onEnvironmentSelected(option.id)
+                    },
                 )
             }
         }
@@ -685,59 +685,53 @@ private fun environmentBadge(environment: ArcaneEnvironment, selected: Boolean):
 }
 
 @Composable
-private fun SectionCard(section: HomeDashboardSection) {
+private fun ResourceEntryCard(resource: DashboardResourceEntry) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = ArcaneColors.SurfaceElevated),
         border = BorderStroke(1.dp, ArcaneColors.Border),
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(18.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = section.name,
+                    text = resource.name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = ArcaneColors.TextPrimary,
                 )
-                StatusPill(text = section.status)
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = resource.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = ArcaneColors.TextSecondary,
+                )
             }
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(text = section.description, style = MaterialTheme.typography.bodyMedium, color = ArcaneColors.TextSecondary)
-            Spacer(modifier = Modifier.height(14.dp))
-            LinearProgressIndicator(
-                progress = { sectionProgress(section.status) },
-                modifier = Modifier.fillMaxWidth(),
-                color = sectionColor(section.status),
-                trackColor = ArcaneColors.Border,
-            )
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = resource.value,
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = ArcaneColors.PrimaryPurple,
+                    fontWeight = FontWeight.Bold,
+                )
+                StatusPill(text = resource.badge)
+            }
         }
     }
-}
-
-private fun sectionProgress(status: String): Float = when (status) {
-    "Next" -> 0.86f
-    "Queued" -> 0.42f
-    else -> 0.18f
-}
-
-@Composable
-private fun sectionColor(status: String) = when (status) {
-    "Next" -> ArcaneColors.SuccessGreen
-    "Queued" -> ArcaneColors.PortBlue
-    else -> ArcaneColors.PrimaryPurple
 }
 
 @Composable
 private fun StatusPill(text: String) {
     val (container, content) = when (text) {
-        "Selected", "Ready", "Next" -> ArcaneColors.SuccessGreenContainer to ArcaneColors.SuccessGreen
-        "Queued", "Edge", "Loading" -> ArcaneColors.SurfaceMuted to ArcaneColors.PortBlue
-        "Error" -> ArcaneColors.SurfaceMuted to ArcaneColors.ErrorRed
+        "Selected", "Ready", "Next", "Healthy", "Clear" -> ArcaneColors.SuccessGreenContainer to ArcaneColors.SuccessGreen
+        "Queued", "Edge", "Loading", "Cleanup", "Review" -> ArcaneColors.SurfaceMuted to ArcaneColors.PortBlue
+        "Error", "Attention" -> ArcaneColors.SurfaceMuted to ArcaneColors.ErrorRed
         else -> ArcaneColors.PrimaryPurpleContainer to ArcaneColors.PrimaryPurple
     }
     Card(
