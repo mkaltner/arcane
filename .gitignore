@@ -10,6 +10,8 @@ frontend/.svelte-kit
 frontend/build
 build
 data/
+!clients/android/app/src/main/java/app/arcane/android/data/
+!clients/android/app/src/main/java/app/arcane/android/data/**
 dist/
 /arcane
 /arcane-*
