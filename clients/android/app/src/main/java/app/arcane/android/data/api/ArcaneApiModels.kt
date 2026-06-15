@@ -1,0 +1,326 @@
+package app.arcane.android.data.api
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+
+object ArcaneHeaders {
+    const val ApiKey = "X-Api-Key"
+}
+
+@Serializable
+data class ApiResponse<T>(
+    val success: Boolean,
+    val data: T,
+)
+
+@Serializable
+data class PaginatedResponse<T>(
+    val success: Boolean,
+    val data: List<T> = emptyList(),
+    val pagination: PaginationResponse,
+)
+
+@Serializable
+data class PaginationResponse(
+    val totalPages: Long = 0,
+    val totalItems: Long = 0,
+    val currentPage: Int = 1,
+    val itemsPerPage: Int = 0,
+    val grandTotalItems: Long? = null,
+)
+
+@Serializable
+data class ErrorResponse(
+    val error: String? = null,
+    val title: String? = null,
+    val detail: String? = null,
+    val message: String? = null,
+) {
+    fun bestMessage(): String = error ?: detail ?: message ?: title ?: "Arcane API request failed"
+}
+
+@Serializable
+data class MessageResponse(
+    val message: String,
+    val activityId: String? = null,
+)
+
+@Serializable
+data class LoginRequest(
+    val username: String,
+    val password: String,
+)
+
+@Serializable
+data class RefreshTokenRequest(
+    val refreshToken: String,
+)
+
+@Serializable
+data class LoginResponse(
+    val token: String,
+    val refreshToken: String,
+    val expiresAt: String,
+    val user: ArcaneUser,
+)
+
+@Serializable
+data class TokenRefreshResponse(
+    val token: String,
+    val refreshToken: String,
+    val expiresAt: String,
+)
+
+@Serializable
+data class ArcaneUser(
+    val id: String,
+    val username: String,
+    val displayName: String? = null,
+    val email: String? = null,
+    val roleAssignments: List<RoleAssignmentSummary> = emptyList(),
+    val permissionsByEnv: Map<String, List<String>> = emptyMap(),
+    val isGlobalAdmin: Boolean = false,
+    val canDelete: Boolean = false,
+    val oidcSubjectId: String? = null,
+    val locale: String? = null,
+    val fontSize: Int? = null,
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
+    val requiresPasswordChange: Boolean = false,
+)
+
+@Serializable
+data class RoleAssignmentSummary(
+    val roleId: String,
+    val environmentId: String? = null,
+    val source: String,
+)
+
+@Serializable
+data class EnvironmentSummary(
+    val id: String,
+    val name: String = "",
+    val apiUrl: String,
+    val status: String,
+    val enabled: Boolean,
+    val isEdge: Boolean = false,
+    val lastSeen: String? = null,
+    val edgeTransport: String? = null,
+    val lastEdgeTransport: String? = null,
+    val edgeSecurityMode: String? = null,
+    val edgeSessionId: String? = null,
+    val edgeAgentInstance: String? = null,
+    val edgeCapabilities: List<String> = emptyList(),
+)
+
+typealias EnvironmentListResponse = PaginatedResponse<EnvironmentSummary>
+
+@Serializable
+data class ContainerListResponse(
+    val success: Boolean,
+    val data: List<ContainerSummary> = emptyList(),
+    val groups: List<ContainerSummaryGroup> = emptyList(),
+    val counts: ContainerStatusCounts? = null,
+    val pagination: PaginationResponse,
+)
+
+@Serializable
+data class ContainerStatusCounts(
+    val runningContainers: Int = 0,
+    val stoppedContainers: Int = 0,
+    val totalContainers: Int = 0,
+)
+
+@Serializable
+data class ContainerSummaryGroup(
+    val groupName: String,
+    val items: List<ContainerSummary> = emptyList(),
+)
+
+@Serializable
+data class ContainerSummary(
+    val id: String,
+    val names: List<String> = emptyList(),
+    val image: String = "",
+    val imageId: String = "",
+    val command: String = "",
+    val created: Long = 0,
+    val ports: List<ContainerPort> = emptyList(),
+    val labels: Map<String, String> = emptyMap(),
+    val state: String = "",
+    val status: String = "",
+    val hostConfig: HostConfig = HostConfig(),
+    val networkSettings: NetworkSettings = NetworkSettings(),
+    val mounts: List<ContainerMount> = emptyList(),
+    val iconLightUrl: String? = null,
+    val iconDarkUrl: String? = null,
+    val updateInfo: JsonElement? = null,
+    val redeployDisabled: Boolean = false,
+)
+
+@Serializable
+data class ContainerDetails(
+    val id: String,
+    val name: String = "",
+    val image: String = "",
+    val imageId: String = "",
+    val created: String = "",
+    val state: ContainerState = ContainerState(),
+    val config: ContainerConfig = ContainerConfig(),
+    val hostConfig: HostConfig = HostConfig(),
+    val networkSettings: NetworkSettings = NetworkSettings(),
+    val ports: List<ContainerPort> = emptyList(),
+    val mounts: List<ContainerMount> = emptyList(),
+    val labels: Map<String, String> = emptyMap(),
+    val composeInfo: ComposeInfo? = null,
+)
+
+@Serializable
+data class ContainerState(
+    val status: String = "",
+    val running: Boolean = false,
+    val startedAt: String = "",
+    val finishedAt: String = "",
+)
+
+@Serializable
+data class ContainerConfig(
+    val env: List<String> = emptyList(),
+    val cmd: List<String> = emptyList(),
+    val entrypoint: List<String> = emptyList(),
+    val workingDir: String = "",
+    val user: String = "",
+)
+
+@Serializable
+data class ContainerPort(
+    val ip: String? = null,
+    val privatePort: Int = 0,
+    val publicPort: Int? = null,
+    val type: String = "tcp",
+)
+
+@Serializable
+data class ContainerMount(
+    val type: String = "",
+    val name: String? = null,
+    val source: String? = null,
+    val destination: String = "",
+    val driver: String? = null,
+    val mode: String? = null,
+    val rw: Boolean = false,
+    val propagation: String? = null,
+)
+
+@Serializable
+data class HostConfig(
+    val networkMode: String? = null,
+    val restartPolicy: String? = null,
+    val privileged: Boolean = false,
+    val autoRemove: Boolean = false,
+    val nanoCpus: Long? = null,
+    val memory: Long? = null,
+)
+
+typealias ContainerHostConfig = HostConfig
+
+@Serializable
+data class NetworkSettings(
+    val networks: Map<String, ContainerNetwork> = emptyMap(),
+)
+
+typealias ContainerNetworkSettings = NetworkSettings
+
+@Serializable
+data class ContainerNetwork(
+    val ipAddress: String = "",
+    val gateway: String = "",
+    val macAddress: String = "",
+    val networkId: String = "",
+    val endpointId: String = "",
+)
+
+@Serializable
+data class ComposeInfo(
+    val projectName: String,
+    val serviceName: String,
+    val workingDir: String? = null,
+    val configFiles: String? = null,
+)
+
+@Serializable
+data class ProjectListResponse(
+    val success: Boolean,
+    val data: List<ProjectDetails> = emptyList(),
+    val pagination: PaginationResponse,
+)
+
+@Serializable
+data class ProjectDetails(
+    val id: String,
+    val name: String = "",
+    val path: String? = null,
+    val status: String? = null,
+    val services: List<JsonElement> = emptyList(),
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
+)
+
+@Serializable
+data class ProjectRuntime(
+    val services: List<JsonElement> = emptyList(),
+)
+
+@Serializable
+data class DeployProjectRequest(
+    val pullPolicy: String? = null,
+    val forceRecreate: Boolean = false,
+    val removeOrphans: Boolean = false,
+)
+
+@Serializable
+data class DashboardSnapshot(
+    val containers: DashboardContainers = DashboardContainers(),
+    val images: DashboardImages = DashboardImages(),
+    val imageUsageCounts: DashboardImageUsageCounts = DashboardImageUsageCounts(),
+    val actionItems: DashboardActionItems = DashboardActionItems(),
+    val settings: JsonElement? = null,
+    val versionInfo: JsonElement? = null,
+)
+
+@Serializable
+data class DashboardContainers(
+    val counts: ContainerStatusCounts = ContainerStatusCounts(),
+    val data: List<JsonElement> = emptyList(),
+    val pagination: PaginationResponse? = null,
+)
+
+@Serializable
+data class DashboardImages(
+    val data: List<JsonElement> = emptyList(),
+    val pagination: PaginationResponse? = null,
+)
+
+@Serializable
+data class DashboardImageUsageCounts(
+    @SerialName("imagesInuse")
+    val imagesInUse: Int = 0,
+    val imagesUnused: Int = 0,
+    val totalImages: Int = 0,
+    val totalImageSize: Long = 0,
+)
+
+@Serializable
+data class DashboardActionItems(
+    val items: List<DashboardActionItem> = emptyList(),
+)
+
+@Serializable
+data class DashboardActionItem(
+    val kind: String,
+    val count: Int = 0,
+    val severity: String = "warning",
+)
+
+typealias DashboardResponse = ApiResponse<DashboardSnapshot>
