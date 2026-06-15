@@ -1,6 +1,7 @@
 package app.arcane.android.ui.home
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,11 +35,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.arcane.android.R
 import app.arcane.android.domain.model.ArcaneEnvironment
 import app.arcane.android.domain.model.ArcaneStatus
 import app.arcane.android.ui.theme.ArcaneColors
@@ -98,7 +102,6 @@ private fun ReadyScaffold(
     ) {
         Scaffold(containerColor = ArcaneColors.Background) { innerPadding ->
             ReadyContent(
-                status = uiState.status,
                 operationalDashboard = uiState.operationalDashboard,
                 navigationDrawer = uiState.navigationDrawer,
                 onOpenDrawer = { scope.launch { drawerState.open() } },
@@ -125,7 +128,6 @@ private fun LoadingContent(modifier: Modifier = Modifier) {
 
 @Composable
 private fun ReadyContent(
-    status: ArcaneStatus,
     operationalDashboard: OperationalDashboardState,
     navigationDrawer: HomeNavigationDrawerState,
     onOpenDrawer: () -> Unit,
@@ -143,9 +145,6 @@ private fun ReadyContent(
                 drawer = navigationDrawer,
                 onClick = onOpenDrawer,
             )
-        }
-        item {
-            HeaderCard(status, selectedEnvironmentName = navigationDrawer.environmentName)
         }
         item {
             OperationalDashboardCard(operationalDashboard)
@@ -225,12 +224,22 @@ private fun NavigationDrawerContent(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
-            Text(
-                text = "ARCANE",
-                style = MaterialTheme.typography.titleLarge,
-                color = ArcaneColors.PrimaryPurple,
-                fontWeight = FontWeight.Black,
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                    contentDescription = "Arcane logo",
+                    modifier = Modifier.size(22.dp),
+                )
+                Text(
+                    text = "ARCANE",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = ArcaneColors.PrimaryPurple,
+                    fontWeight = FontWeight.Black,
+                )
+            }
         }
         item {
             EnvironmentSelectorHeader(
@@ -468,41 +477,6 @@ private fun DashboardSnapshotUiState.statusLabel(): String = when (this) {
     is DashboardSnapshotUiState.Content -> "Ready"
     is DashboardSnapshotUiState.Error -> "Error"
 }
-
-@Composable
-private fun HeaderCard(status: ArcaneStatus, selectedEnvironmentName: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = ArcaneColors.Surface),
-        border = BorderStroke(1.dp, ArcaneColors.Border),
-    ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Text(
-                text = "DASHBOARD",
-                style = MaterialTheme.typography.labelMedium,
-                color = ArcaneColors.TextSecondary,
-                fontWeight = FontWeight.Bold,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = status.title,
-                style = MaterialTheme.typography.headlineMedium,
-                color = ArcaneColors.TextPrimary,
-                fontWeight = FontWeight.Bold,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = status.message.withResolvedEnvironment(selectedEnvironmentName),
-                style = MaterialTheme.typography.bodyLarge,
-                color = ArcaneColors.TextSecondary,
-            )
-        }
-    }
-}
-
-private fun String.withResolvedEnvironment(selectedEnvironmentName: String): String =
-    replace(Regex("Environment: [^.]+\\."), "Environment: $selectedEnvironmentName.")
 
 @Composable
 private fun NextStepCard() {
