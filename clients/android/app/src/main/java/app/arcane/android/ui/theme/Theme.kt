@@ -1,6 +1,5 @@
 package app.arcane.android.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
@@ -49,11 +48,13 @@ private val ArcaneLightColors = lightColorScheme(
 
 private val AppTypography = Typography()
 
+internal const val UseArcaneDarkThemeByDefault = true
+
 val ArcaneDarkColorScheme: ColorScheme = ArcaneDarkColors
 
 @Composable
 fun ArcaneTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = UseArcaneDarkThemeByDefault,
     content: @Composable () -> Unit,
 ) {
     MaterialTheme(

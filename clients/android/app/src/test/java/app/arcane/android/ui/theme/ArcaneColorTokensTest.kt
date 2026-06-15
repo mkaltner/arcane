@@ -6,6 +6,11 @@ import org.junit.Test
 
 class ArcaneColorTokensTest {
     @Test
+    fun `Arcane theme defaults to dark app palette regardless of system theme`() {
+        assertEquals(true, UseArcaneDarkThemeByDefault)
+    }
+
+    @Test
     fun `dark theme uses Arcane web palette foundations`() {
         assertEquals(0xFF08080A.toInt(), ArcaneColors.Background.toArgb())
         assertEquals(0xFF111116.toInt(), ArcaneColors.Surface.toArgb())
