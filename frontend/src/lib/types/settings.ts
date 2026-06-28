@@ -78,6 +78,9 @@ export type Settings = {
 	trivyServerUrl: string;
 	trivyServerToken: string;
 	trivyIgnoreUnfixed: boolean;
+	lifecycleEnabled: boolean;
+	lifecycleDefaultRunnerImage: string;
+	lifecycleMaxTimeoutSec: number;
 	oidcEnabled: boolean;
 	oidcClientId: string;
 	oidcClientSecret?: string;

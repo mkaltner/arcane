@@ -10,31 +10,65 @@
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import FileBrowserDialog from '$lib/components/dialogs/file-browser-dialog.svelte';
-	import type { GitOpsSync, GitOpsSyncCreateDto, GitOpsSyncUpdateDto, GitRepository, BranchInfo } from '$lib/types/automation';
+	import type {
+		FileTreeNode,
+		GitOpsSync,
+		GitOpsSyncCreateDto,
+		GitOpsSyncUpdateDto,
+		GitRepository,
+		BranchInfo
+	} from '$lib/types/automation';
 	import { gitRepositoryService } from '$lib/services/git-repository-service';
 	import { settingsService } from '$lib/services/settings-service';
+	import { hasPermission } from '$lib/utils/auth';
 	import { z } from 'zod/v4';
 	import { createForm, preventDefault } from '$lib/utils/settings';
 	import { queryKeys } from '$lib/query/query-keys';
 	import { m } from '$lib/paraglide/messages';
-	import { ArrowRightIcon, FolderOpenIcon, InfoIcon } from '$lib/icons';
+	import { ArrowRightIcon, CodeIcon, FolderOpenIcon, InfoIcon } from '$lib/icons';
 	import * as Alert from '$lib/components/ui/alert';
 	import { createQuery } from '@tanstack/svelte-query';
 
 	type GitOpsSyncFormProps = {
 		open: boolean;
 		syncToEdit: GitOpsSync | null;
+		environmentId: string;
 		targetType?: string;
 		onSubmit: (detail: { sync: GitOpsSyncCreateDto | GitOpsSyncUpdateDto; isEditMode: boolean }) => void;
 		isLoading: boolean;
 	};
 
-	let { open = $bindable(false), syncToEdit = $bindable(), targetType, onSubmit, isLoading }: GitOpsSyncFormProps = $props();
+	let {
+		open = $bindable(false),
+		syncToEdit = $bindable(),
+		environmentId,
+		targetType,
+		onSubmit,
+		isLoading
+	}: GitOpsSyncFormProps = $props();
 
 	type GitOpsSyncTargetType = 'project' | 'swarm_stack';
 
 	let isEditMode = $derived(!!syncToEdit);
 	let showFileBrowser = $state(false);
+	let fileBrowserTarget = $state<'compose' | 'preDeployScript'>('compose');
+
+	// Pre-deploy lifecycle hooks run arbitrary containers (with host mounts, env,
+	// and network access) on every sync, so configuring them is gated behind the
+	// dedicated gitops:lifecycle permission rather than the broader gitops:create
+	// / gitops:update. Users without it see a read-only summary instead of the
+	// editable section and never submit its fields; the backend enforces the same
+	// rule as defense-in-depth.
+	let canManageLifecycle = $derived(hasPermission('gitops:lifecycle', environmentId));
+
+	// Whether the sync being edited already has a hook configured. Used to flag
+	// its presence to users who can't manage it and to lock the directory-sync
+	// toggle so they can't accidentally invalidate the hook.
+	let hookConfigured = $derived(!!syncToEdit?.preDeployScriptPath?.trim());
+	let lockSyncDirectory = $derived(!canManageLifecycle && hookConfigured);
+
+	const composeFileFilter = (file: FileTreeNode) =>
+		file.type === 'file' && (file.name.endsWith('.yml') || file.name.endsWith('.yaml'));
 	let selectedTargetType = $state<GitOpsSyncTargetType>('project');
 
 	const targetTypeOptions = [
@@ -56,7 +90,13 @@
 		maxSyncTotalSizeMb: z.coerce.number().int().nonnegative(),
 		maxSyncBinarySizeMb: z.coerce.number().int().nonnegative(),
 		autoSync: z.boolean().default(true),
-		syncInterval: z.number().min(1).default(5)
+		syncInterval: z.number().min(1).default(5),
+		preDeployScriptPath: z.string().default(''),
+		preDeployRunnerImage: z.string().default(''),
+		preDeployTimeoutSec: z.coerce.number().int().positive().default(60),
+		preDeployNetworkMode: z.string().default('none'),
+		preDeployEnv: z.string().default(''),
+		preDeployExtraMounts: z.string().default('')
 	});
 
 	const bytesPerMegabyte = 1024 * 1024;
@@ -71,11 +111,14 @@
 	}
 
 	const settingsQuery = createQuery(() => ({
-		queryKey: queryKeys.settings.global(),
-		queryFn: () => settingsService.getSettings(),
+		queryKey: queryKeys.settings.byEnvironment(environmentId),
+		queryFn: () => settingsService.getSettingsForEnvironmentMerged(environmentId),
 		enabled: open,
-		staleTime: 30_000
+		staleTime: 0,
+		refetchOnMount: 'always'
 	}));
+	const lifecycleEnabled = $derived(settingsQuery.data?.lifecycleEnabled ?? false);
+	const lifecycleDefaultRunnerImage = $derived(settingsQuery.data?.lifecycleDefaultRunnerImage?.trim() || 'alpine:latest');
 
 	let formData = $derived({
 		name: open && syncToEdit ? syncToEdit.name : '',
@@ -94,7 +137,13 @@
 				? bytesToMegabytesInternal(syncToEdit.maxSyncBinarySize, 0)
 				: (settingsQuery.data?.gitSyncMaxBinarySizeMb ?? 0),
 		autoSync: open && syncToEdit ? (syncToEdit.autoSync ?? true) : true,
-		syncInterval: open && syncToEdit ? (syncToEdit.syncInterval ?? 5) : 5
+		syncInterval: open && syncToEdit ? (syncToEdit.syncInterval ?? 5) : 5,
+		preDeployScriptPath: open && syncToEdit ? (syncToEdit.preDeployScriptPath ?? '') : '',
+		preDeployRunnerImage: open && syncToEdit ? (syncToEdit.preDeployRunnerImage ?? '') : lifecycleDefaultRunnerImage,
+		preDeployTimeoutSec: open && syncToEdit ? (syncToEdit.preDeployTimeoutSec ?? 60) : 60,
+		preDeployNetworkMode: open && syncToEdit ? (syncToEdit.preDeployNetworkMode ?? 'none') : 'none',
+		preDeployEnv: open && syncToEdit ? (syncToEdit.preDeployEnv ?? '') : '',
+		preDeployExtraMounts: open && syncToEdit ? (syncToEdit.preDeployExtraMounts ?? '') : ''
 	});
 
 	let { inputs, ...form } = $derived(createForm<typeof formSchema>(formSchema, formData));
@@ -118,6 +167,46 @@
 	}));
 	const branches = $derived<BranchInfo[]>(branchesQuery.data?.branches ?? []);
 	const loadingBranches = $derived(!!selectedRepository?.value && (branchesQuery.isPending || branchesQuery.isFetching));
+
+	function normalizeLifecycleNetworkModeInternal(value: string | undefined | null): string {
+		return value?.trim() || 'none';
+	}
+
+	function existingLifecycleSnapshotInternal(sync: GitOpsSync | null) {
+		return {
+			scriptPath: sync?.preDeployScriptPath?.trim() ?? '',
+			runnerImage: sync?.preDeployRunnerImage?.trim() ?? '',
+			timeoutSec: sync?.preDeployTimeoutSec ?? 60,
+			networkMode: normalizeLifecycleNetworkModeInternal(sync?.preDeployNetworkMode),
+			env: sync?.preDeployEnv?.trim() ?? '',
+			extraMounts: sync?.preDeployExtraMounts?.trim() ?? ''
+		};
+	}
+
+	function shouldSubmitLifecycleFieldsInternal(data: z.infer<typeof formSchema>): boolean {
+		if (!lifecycleEnabled || !canManageLifecycle || selectedTargetType !== 'project') {
+			return false;
+		}
+
+		const scriptPath = data.preDeployScriptPath.trim();
+		if (!isEditMode) {
+			return scriptPath !== '';
+		}
+
+		const existing = existingLifecycleSnapshotInternal(syncToEdit);
+		if (scriptPath === '' && existing.scriptPath === '') {
+			return false;
+		}
+
+		return (
+			scriptPath !== existing.scriptPath ||
+			data.preDeployRunnerImage.trim() !== existing.runnerImage ||
+			data.preDeployTimeoutSec !== existing.timeoutSec ||
+			normalizeLifecycleNetworkModeInternal(data.preDeployNetworkMode) !== existing.networkMode ||
+			data.preDeployEnv.trim() !== existing.env ||
+			data.preDeployExtraMounts.trim() !== existing.extraMounts
+		);
+	}
 
 	$effect(() => {
 		if (open) {
@@ -165,6 +254,15 @@
 			autoSync: data.autoSync,
 			syncInterval: data.syncInterval
 		};
+
+		if (shouldSubmitLifecycleFieldsInternal(data)) {
+			payload.preDeployScriptPath = data.preDeployScriptPath.trim();
+			payload.preDeployRunnerImage = data.preDeployRunnerImage.trim();
+			payload.preDeployTimeoutSec = data.preDeployTimeoutSec;
+			payload.preDeployNetworkMode = normalizeLifecycleNetworkModeInternal(data.preDeployNetworkMode);
+			payload.preDeployEnv = data.preDeployEnv.trim();
+			payload.preDeployExtraMounts = data.preDeployExtraMounts.trim();
+		}
 
 		onSubmit({ sync: payload, isEditMode });
 	}
@@ -285,7 +383,10 @@
 								type="button"
 								variant="outline"
 								size="icon"
-								onclick={() => (showFileBrowser = true)}
+								onclick={() => {
+									fileBrowserTarget = 'compose';
+									showFileBrowser = true;
+								}}
 								disabled={!selectedRepository?.value || !$inputs.branch.value}
 								title={m.git_sync_browse_files_title()}
 							>
@@ -298,10 +399,13 @@
 				<div class="border-border/70 bg-muted/20 grid gap-3 rounded-lg border p-3 sm:grid-cols-[minmax(0,1fr)_8rem]">
 					<div class="grid gap-3 sm:grid-cols-2">
 						<div class="flex items-start gap-3">
-							<Switch id="syncDirectorySwitch" bind:checked={$inputs.syncDirectory.value} />
+							<Switch id="syncDirectorySwitch" bind:checked={$inputs.syncDirectory.value} disabled={lockSyncDirectory} />
 							<div class="space-y-1">
 								<Label for="syncDirectorySwitch" class="mb-0 text-sm leading-none font-medium">{m.git_sync_sync_files()}</Label>
 								<p class="text-muted-foreground text-xs">{m.git_sync_sync_files_description()}</p>
+								{#if lockSyncDirectory}
+									<p class="text-muted-foreground text-xs italic">{m.git_sync_sync_files_locked_hint()}</p>
+								{/if}
 								{#if $inputs.syncDirectory.error}
 									<p class="text-destructive text-xs font-medium">{$inputs.syncDirectory.error}</p>
 								{/if}
@@ -380,6 +484,137 @@
 					</Collapsible.Content>
 				</Collapsible.Root>
 
+				{#if lifecycleEnabled && canManageLifecycle && selectedTargetType === 'project'}
+					<Collapsible.Root class="group/collapsible">
+						<Collapsible.Trigger
+							type="button"
+							class="text-muted-foreground hover:text-foreground flex w-full items-start justify-between gap-3 rounded-md px-1 py-1.5 text-left text-sm transition-colors"
+						>
+							<span class="min-w-0">
+								<span class="block font-medium">{m.git_sync_pre_deploy_title()}</span>
+							</span>
+							<ArrowRightIcon class="mt-0.5 size-4 shrink-0 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+						</Collapsible.Trigger>
+						<Collapsible.Content>
+							<div class="border-border/70 mt-2 space-y-3 rounded-lg border border-dashed p-3">
+								<Alert.Root
+									class="border-amber-500/30 bg-amber-500/5 text-amber-700 dark:text-amber-300 [&>svg]:top-1/2 [&>svg]:-translate-y-1/2"
+								>
+									<InfoIcon class="size-4" />
+									<Alert.Description class="text-xs">
+										{m.git_sync_pre_deploy_acknowledgement()}
+									</Alert.Description>
+								</Alert.Root>
+
+								<p class="text-muted-foreground text-xs">{m.git_sync_pre_deploy_description()}</p>
+
+								<div class="space-y-1.5">
+									<Label for="preDeployScriptPath" class="text-sm font-medium">
+										{m.git_sync_pre_deploy_script_path_label()}
+									</Label>
+									<div class="flex gap-2">
+										<div class="flex-1">
+											<Input
+												id="preDeployScriptPath"
+												type="text"
+												placeholder={m.git_sync_pre_deploy_script_path_placeholder()}
+												bind:value={$inputs.preDeployScriptPath.value}
+												aria-invalid={$inputs.preDeployScriptPath.error ? 'true' : undefined}
+											/>
+										</div>
+										<Button
+											type="button"
+											variant="outline"
+											size="icon"
+											onclick={() => {
+												fileBrowserTarget = 'preDeployScript';
+												showFileBrowser = true;
+											}}
+											disabled={!selectedRepository?.value || !$inputs.branch.value}
+											title={m.git_sync_browse_files_title()}
+										>
+											<FolderOpenIcon class="size-4" />
+										</Button>
+									</div>
+									<p class="text-muted-foreground text-xs">{m.git_sync_pre_deploy_script_path_help()}</p>
+									{#if $inputs.preDeployScriptPath.error}
+										<p class="text-destructive text-xs font-medium">{$inputs.preDeployScriptPath.error}</p>
+									{/if}
+								</div>
+
+								<FormInput
+									label={m.git_sync_pre_deploy_runner_image_label()}
+									type="text"
+									placeholder={m.git_sync_pre_deploy_runner_image_placeholder()}
+									helpText={m.git_sync_pre_deploy_runner_image_help()}
+									bind:input={$inputs.preDeployRunnerImage}
+								/>
+
+								<div class="grid gap-3 sm:grid-cols-2">
+									<FormInput
+										label={m.git_sync_pre_deploy_timeout_label()}
+										type="number"
+										placeholder="60"
+										helpText={m.git_sync_pre_deploy_timeout_help()}
+										bind:input={$inputs.preDeployTimeoutSec}
+									/>
+									<FormInput
+										label={m.git_sync_pre_deploy_network_mode_label()}
+										type="text"
+										placeholder={m.git_sync_pre_deploy_network_mode_placeholder()}
+										helpText={m.git_sync_pre_deploy_network_mode_help()}
+										bind:input={$inputs.preDeployNetworkMode}
+									/>
+								</div>
+
+								<FormInput
+									type="textarea"
+									label={m.git_sync_pre_deploy_env_label()}
+									placeholder={m.git_sync_pre_deploy_env_placeholder()}
+									helpText={m.git_sync_pre_deploy_env_help()}
+									bind:input={$inputs.preDeployEnv}
+									class="[&_textarea]:font-mono [&_textarea]:text-xs"
+								/>
+
+								<FormInput
+									type="textarea"
+									label={m.git_sync_pre_deploy_extra_mounts_label()}
+									placeholder={m.git_sync_pre_deploy_extra_mounts_placeholder()}
+									helpText={m.git_sync_pre_deploy_extra_mounts_help()}
+									bind:input={$inputs.preDeployExtraMounts}
+									class="[&_textarea]:font-mono [&_textarea]:text-xs"
+								/>
+							</div>
+						</Collapsible.Content>
+					</Collapsible.Root>
+				{:else if lifecycleEnabled && canManageLifecycle}
+					<div
+						class="text-muted-foreground flex w-full items-start justify-between gap-3 rounded-md px-1 py-1.5 text-left text-sm"
+					>
+						<span class="min-w-0">
+							<span class="block font-medium">{m.git_sync_pre_deploy_title()}</span>
+							<span class="text-xs">{m.git_sync_pre_deploy_swarm_unsupported()}</span>
+						</span>
+					</div>
+				{:else if lifecycleEnabled}
+					<div
+						class="text-muted-foreground flex w-full items-start justify-between gap-3 rounded-md px-1 py-1.5 text-left text-sm"
+					>
+						<span class="min-w-0">
+							<span class="block font-medium">{m.git_sync_pre_deploy_title()}</span>
+							<span class="text-xs">{m.git_sync_pre_deploy_managed_hint()}</span>
+						</span>
+						<span class="mt-0.5 inline-flex shrink-0 items-center gap-1.5 text-xs">
+							{#if hookConfigured}
+								<CodeIcon class="size-3.5" />
+								{m.git_sync_pre_deploy_status_configured()}
+							{:else}
+								{m.git_sync_pre_deploy_status_none()}
+							{/if}
+						</span>
+					</div>
+				{/if}
+
 				<Alert.Root class="border-border/70 bg-muted/20 text-muted-foreground py-2 [&>svg]:top-1/2 [&>svg]:-translate-y-1/2">
 					<InfoIcon class="size-4" />
 					<Alert.Description class="text-xs">
@@ -412,11 +647,38 @@
 	{/snippet}
 </ResponsiveDialog>
 
+{#snippet composeBadge(file: FileTreeNode)}
+	{#if composeFileFilter(file)}
+		<span class="bg-primary/10 text-primary ml-auto rounded px-2 py-0.5 text-xs">
+			{m.git_sync_browse_compose_label()}
+		</span>
+	{/if}
+{/snippet}
+
+{#snippet composeFooterHint()}
+	<p class="text-muted-foreground text-xs">{m.git_sync_browse_hint()}</p>
+{/snippet}
+
 <FileBrowserDialog
 	bind:open={showFileBrowser}
 	repositoryId={selectedRepository?.value || ''}
 	branch={$inputs.branch.value}
+	description={fileBrowserTarget === 'preDeployScript'
+		? m.git_sync_browse_files_description_script()
+		: m.git_sync_browse_files_description()}
+	rootPath={fileBrowserTarget === 'preDeployScript'
+		? $inputs.composePath.value.includes('/')
+			? $inputs.composePath.value.replace(/\/[^/]*$/, '')
+			: ''
+		: ''}
+	fileFilter={fileBrowserTarget === 'preDeployScript' ? undefined : composeFileFilter}
+	fileBadge={fileBrowserTarget === 'preDeployScript' ? undefined : composeBadge}
+	footerHint={fileBrowserTarget === 'preDeployScript' ? undefined : composeFooterHint}
 	onSelect={(path) => {
-		$inputs.composePath.value = path;
+		if (fileBrowserTarget === 'preDeployScript') {
+			$inputs.preDeployScriptPath.value = path;
+		} else {
+			$inputs.composePath.value = path;
+		}
 	}}
 />

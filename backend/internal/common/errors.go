@@ -1577,7 +1577,7 @@ type GitOpsSyncCreationError struct {
 }
 
 func (e *GitOpsSyncCreationError) Error() string {
-	return "Failed to create GitOps sync"
+	return fmt.Sprintf("Failed to create GitOps sync: %v", e.Err)
 }
 
 type GitOpsSyncRetrievalError struct {
@@ -1593,7 +1593,7 @@ type GitOpsSyncUpdateError struct {
 }
 
 func (e *GitOpsSyncUpdateError) Error() string {
-	return "Failed to update GitOps sync"
+	return fmt.Sprintf("Failed to update GitOps sync: %v", e.Err)
 }
 
 type GitOpsSyncDeletionError struct {
@@ -1649,6 +1649,31 @@ type GitOpsSyncMappingError struct {
 
 func (e *GitOpsSyncMappingError) Error() string {
 	return "Failed to map GitOps sync"
+}
+
+// RedeployAfterSyncFailedError is returned by the internal GitOps sync flow
+// when the file sync succeeded but the auto-redeploy that follows it failed
+// (e.g. a pre-deploy lifecycle hook returned non-zero). Callers surface this on
+// the sync row's LastSyncError so the failure is visible from the GitOps UI
+// rather than only in the logs.
+type RedeployAfterSyncFailedError struct {
+	Err error
+}
+
+func (e *RedeployAfterSyncFailedError) Error() string {
+	if e == nil || e.Err == nil {
+		return "redeploy failed"
+	}
+
+	return "redeploy failed: " + e.Err.Error()
+}
+
+func (e *RedeployAfterSyncFailedError) Unwrap() error {
+	if e == nil {
+		return nil
+	}
+
+	return e.Err
 }
 
 type VulnerabilityScanError struct {
