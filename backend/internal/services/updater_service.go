@@ -731,6 +731,18 @@ func resourceResultsFromModuleInternal(results []moduletypes.ResourceResult) []u
 }
 
 func resourceResultFromModuleInternal(result moduletypes.ResourceResult) updater.ResourceResult {
+	errorText := result.Error
+	details := result.Details
+	if isUnchangedDigestAfterPullInternal(errorText) &&
+		(result.Status == moduletypes.StatusUpToDate || result.Status == moduletypes.StatusSkipped) {
+		errorText = ""
+		details = maps.Clone(details)
+		if details == nil {
+			details = map[string]any{}
+		}
+		details["note"] = result.Error
+	}
+
 	return updater.ResourceResult{
 		ResourceID:      result.ResourceID,
 		ResourceName:    result.ResourceName,
@@ -740,9 +752,13 @@ func resourceResultFromModuleInternal(result moduletypes.ResourceResult) updater
 		UpdateApplied:   result.UpdateApplied,
 		OldImages:       result.OldImages,
 		NewImages:       result.NewImages,
-		Error:           result.Error,
-		Details:         result.Details,
+		Error:           errorText,
+		Details:         details,
 	}
+}
+
+func isUnchangedDigestAfterPullInternal(message string) bool {
+	return strings.Contains(strings.ToLower(strings.TrimSpace(message)), "digest unchanged after pull")
 }
 
 func statusFromModuleInternal(status moduletypes.Status) updater.Status {

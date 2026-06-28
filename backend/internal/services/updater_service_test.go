@@ -499,6 +499,30 @@ func TestUpdaterService_RecordUpdateRunAdapterInternal(t *testing.T) {
 	assert.Equal(t, "test", record.Details["source"])
 }
 
+func TestUpdaterService_RecordUpdateRunUnchangedDigestIsNotErrorInternal(t *testing.T) {
+	ctx := context.Background()
+	db := setupProjectTestDB(t)
+	require.NoError(t, db.AutoMigrate(&models.AutoUpdateRecord{}))
+	svc := NewUpdaterService(db, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+
+	err := svc.RecordUpdateRun(ctx, moduletypes.ResourceResult{
+		ResourceID:   "nginx:1.27",
+		ResourceName: "nginx:1.27",
+		ResourceType: moduletypes.ResourceTypeImage,
+		Status:       moduletypes.StatusUpToDate,
+		OldImages:    map[string]string{"main": "nginx:1.27"},
+		NewImages:    map[string]string{"main": "nginx:1.27"},
+		Error:        "image digest unchanged after pull",
+	})
+
+	require.NoError(t, err)
+	var record models.AutoUpdateRecord
+	require.NoError(t, db.First(&record, "resource_id = ?", "nginx:1.27").Error)
+	assert.Equal(t, models.AutoUpdateStatus(moduletypes.StatusUpToDate), record.Status)
+	assert.Nil(t, record.Error)
+	assert.Equal(t, "image digest unchanged after pull", record.Details["note"])
+}
+
 func TestUpdaterService_ApplyPending_ProjectFailureDoesNotBlockOtherProjectsInternal(t *testing.T) {
 	ctx := context.Background()
 
