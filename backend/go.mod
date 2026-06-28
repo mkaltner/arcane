@@ -58,7 +58,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/tonistiigi/fsutil v0.0.0-20260609174605-b61e79c0c046
 	github.com/wneessen/go-mail v0.7.3
-	go.getarcane.app/updater v0.3.10
+	go.getarcane.app/updater v0.4.0
 	golang.org/x/crypto v0.53.0
 	golang.org/x/mod v0.37.0
 	golang.org/x/net v0.56.0

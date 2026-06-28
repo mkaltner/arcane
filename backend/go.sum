@@ -535,8 +535,8 @@ github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 h1:ilQV1hzziu+LLM3zU
 github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78/go.mod h1:aL8wCCfTfSfmXjznFBSZNN13rSJjlIOI1fUNAtF7rmI=
 github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo0=
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
-go.getarcane.app/updater v0.3.10 h1:ZCYcjIQRgWMbO0rwBjmSS2X8h0F9kN/9GqYUK9Mfw7E=
-go.getarcane.app/updater v0.3.10/go.mod h1:4+jvmGU+HdDLHTuqFZ/NJ7lzZzF0F2AVvqnap5uJQaQ=
+go.getarcane.app/updater v0.4.0 h1:ZVXZ8N/sXDZq7/0VvB8JMwtbwNpGqrswLDjESimL8mw=
+go.getarcane.app/updater v0.4.0/go.mod h1:Pqz4cI9nePA6abdZzfESZPxQC5jWVoiWKqcgX+pDkAk=
 go.opencensus.io v0.24.0 h1:y73uSU6J157QMP2kn2r30vwW1A2W2WFwSCGnAVxeaD0=
 go.opencensus.io v0.24.0/go.mod h1:vNK8G9p7aAivkbmorf4v+7Hgx+Zs0yY+0fOtgBfjQKo=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=

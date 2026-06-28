@@ -882,8 +882,6 @@ github.com/docker/cli v29.1.5+incompatible/go.mod h1:JLrzqnKDaYBop7H2jaqPtU4hHvM
 github.com/docker/cli v29.2.0+incompatible/go.mod h1:JLrzqnKDaYBop7H2jaqPtU4hHvMKP+vjCwu2uszcLI8=
 github.com/docker/cli v29.4.3+incompatible/go.mod h1:JLrzqnKDaYBop7H2jaqPtU4hHvMKP+vjCwu2uszcLI8=
 github.com/docker/cli v29.5.3+incompatible/go.mod h1:JLrzqnKDaYBop7H2jaqPtU4hHvMKP+vjCwu2uszcLI8=
-github.com/docker/cli v29.6.1+incompatible h1:oO7F4nn3Ovr/5TlfTUWFbMwBSS/B7Xs6Epv26gBrUP8=
-github.com/docker/cli v29.6.1+incompatible/go.mod h1:JLrzqnKDaYBop7H2jaqPtU4hHvMKP+vjCwu2uszcLI8=
 github.com/docker/cli-docs-tool v0.10.0/go.mod h1:5EM5zPnT2E7yCLERZmrDA234Vwn09fzRHP4aX1qwp1U=
 github.com/docker/cli-docs-tool v0.11.0 h1:7d8QARFb7QEobizqxmEM7fOteZEHwH/zWgHQtHZEcfE=
 github.com/docker/cli-docs-tool v0.11.0/go.mod h1:ma8BKiisUo8D6W05XEYIh3oa1UbgrZhi1nowyKFJa8Q=
@@ -2055,6 +2053,8 @@ go.getarcane.app/updater v0.3.6 h1:+BqoycaRsHj+cLVSzcYQuqbHxUKbtmaozMNblz5bVSw=
 go.getarcane.app/updater v0.3.6/go.mod h1:2ENitZR/lA5MuBn60OZYR5wvU3ZCE+pAgfrebfOlRDA=
 go.getarcane.app/updater v0.3.7 h1:WqHsxudvt8gvCR7iSHdxdzwH0+hM0FAh64bSypBX9Mo=
 go.getarcane.app/updater v0.3.7/go.mod h1:9RZOKaBbpUJfVA4Q9/jvqtjvWBwCnVw0OkPeQCnqAAo=
+go.getarcane.app/updater v0.4.0 h1:ZVXZ8N/sXDZq7/0VvB8JMwtbwNpGqrswLDjESimL8mw=
+go.getarcane.app/updater v0.4.0/go.mod h1:Pqz4cI9nePA6abdZzfESZPxQC5jWVoiWKqcgX+pDkAk=
 go.mongodb.org/mongo-driver v1.7.5 h1:ny3p0reEpgsR2cfA5cjgwFZg3Cv/ofFh/8jbhGtz9VI=
 go.mongodb.org/mongo-driver v1.7.5/go.mod h1:VXEWRZ6URJIkUq2SCAyapmhH0ZLRBP+FT4xhp5Zvxng=
 go.mongodb.org/mongo-driver v1.17.6 h1:87JUG1wZfWsr6rIz3ZmpH90rL5tea7O3IHuSwHUpsss=
