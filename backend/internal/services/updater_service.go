@@ -9,6 +9,7 @@ import (
 	"maps"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/compose-spec/compose-go/v2/loader"
@@ -32,8 +33,10 @@ import (
 
 // UpdaterService is Arcane's handler-facing service for the standalone updater engine.
 type UpdaterService struct {
-	deps   updaterDependenciesInternal
-	engine *moduleapi.Service
+	deps                   updaterDependenciesInternal
+	engine                 *moduleapi.Service
+	applyMu                sync.Mutex
+	runningApplyActivityID string
 }
 
 type updaterDependenciesInternal struct {
@@ -140,8 +143,43 @@ func (s *UpdaterService) registryDigestResolverInternal() updaterdigest.RemoteRe
 
 // ApplyPending executes pending image updates.
 func (s *UpdaterService) ApplyPending(ctx context.Context, options updater.Options) (out *updater.Result, err error) {
+	activityID, started := s.beginAutoUpdateActivityInternal(ctx, options.DryRun)
+	if !started {
+		s.loggerInternal().InfoContext(ctx, "Auto-update already running", "activityId", activityID)
+		return &updater.Result{
+			Success:    true,
+			Items:      []updater.ResourceResult{},
+			ActivityID: utils.StringPtrFromTrimmed(activityID),
+		}, nil
+	}
+	defer s.finishAutoUpdateActivityInternal(activityID)
+
+	return s.applyPendingWithActivityInternal(ctx, options, activityID)
+}
+
+// StartApplyPending starts pending image updates in the background and returns the tracking activity ID.
+func (s *UpdaterService) StartApplyPending(ctx context.Context, options updater.Options) string {
+	activityID, started := s.beginAutoUpdateActivityInternal(ctx, options.DryRun)
+	if !started {
+		s.loggerInternal().InfoContext(ctx, "Auto-update already running", "activityId", activityID)
+		return activityID
+	}
+
+	backgroundCtx := utils.ActivityRuntimeContext(ctx, nil)
+
+	go func() {
+		defer s.finishAutoUpdateActivityInternal(activityID)
+
+		if _, err := s.applyPendingWithActivityInternal(backgroundCtx, options, activityID); err != nil {
+			s.loggerInternal().ErrorContext(backgroundCtx, "background updater run failed", "activityId", activityID, "error", err)
+		}
+	}()
+
+	return activityID
+}
+
+func (s *UpdaterService) applyPendingWithActivityInternal(ctx context.Context, options updater.Options, activityID string) (out *updater.Result, err error) {
 	start := time.Now()
-	activityID := s.startAutoUpdateActivityInternal(ctx, options.DryRun)
 	out = &updater.Result{Items: []updater.ResourceResult{}, ActivityID: utils.StringPtrFromTrimmed(activityID)}
 	ctx = s.trackActivityInternal(ctx, activityID)
 	ctx = contextWithActivityIDInternal(ctx, activityID)
@@ -581,6 +619,34 @@ func activityIDFromContextInternal(ctx context.Context) string {
 	}
 	activityID, _ := ctx.Value(activityIDContextKeyInternal{}).(string)
 	return strings.TrimSpace(activityID)
+}
+
+func (s *UpdaterService) beginAutoUpdateActivityInternal(ctx context.Context, dryRun bool) (string, bool) {
+	s.applyMu.Lock()
+	defer s.applyMu.Unlock()
+
+	if s.runningApplyActivityID != "" {
+		return s.runningApplyActivityID, false
+	}
+
+	activityID := s.startAutoUpdateActivityInternal(ctx, dryRun)
+	if activityID != "" {
+		s.runningApplyActivityID = activityID
+	}
+	return activityID, true
+}
+
+func (s *UpdaterService) finishAutoUpdateActivityInternal(activityID string) {
+	if activityID == "" {
+		return
+	}
+
+	s.applyMu.Lock()
+	defer s.applyMu.Unlock()
+
+	if s.runningApplyActivityID == activityID {
+		s.runningApplyActivityID = ""
+	}
 }
 
 func (s *UpdaterService) startAutoUpdateActivityInternal(ctx context.Context, dryRun bool) string {

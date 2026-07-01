@@ -32,6 +32,10 @@ type RunUpdaterOutput struct {
 	Body base.ApiResponse[*updater.Result]
 }
 
+type StartUpdaterOutput struct {
+	Body base.ApiResponse[base.MessageResponse]
+}
+
 type UpdateContainerInput struct {
 	EnvironmentID string `path:"id" doc:"Environment ID"`
 	ContainerID   string `path:"containerId" doc:"Container ID to update"`
@@ -77,6 +81,20 @@ func RegisterUpdater(api huma.API, updaterService *services.UpdaterService, appC
 			{"ApiKeyAuth": {}},
 		},
 	}, authz.PermImageUpdatesCheck, h.RunUpdater)
+
+	humamw.RegisterWithPermission(api, huma.Operation{
+		OperationID:   "start-updater",
+		Method:        http.MethodPost,
+		Path:          "/environments/{id}/updater/start",
+		Summary:       "Start updater",
+		Description:   "Start applying pending container updates and return immediately",
+		DefaultStatus: http.StatusAccepted,
+		Tags:          []string{"Updater"},
+		Security: []map[string][]string{
+			{"BearerAuth": {}},
+			{"ApiKeyAuth": {}},
+		},
+	}, authz.PermImageUpdatesCheck, h.StartUpdater)
 
 	humamw.RegisterWithPermission(api, huma.Operation{
 		OperationID: "get-updater-status",
@@ -139,6 +157,31 @@ func (h *UpdaterHandler) RunUpdater(ctx context.Context, input *RunUpdaterInput)
 		Body: base.ApiResponse[*updater.Result]{
 			Success: true,
 			Data:    out,
+		},
+	}, nil
+}
+
+// StartUpdater starts applying pending container updates in the background.
+func (h *UpdaterHandler) StartUpdater(ctx context.Context, input *RunUpdaterInput) (*StartUpdaterOutput, error) {
+	if h.updaterService == nil {
+		return nil, huma.Error500InternalServerError("service not available")
+	}
+
+	options := updater.Options{}
+	if input.Body != nil {
+		options = *input.Body
+	}
+
+	runtimeCtx := utils.ActivityRuntimeContext(ctx, h.appCtx)
+	activityID := h.updaterService.StartApplyPending(runtimeCtx, options)
+
+	return &StartUpdaterOutput{
+		Body: base.ApiResponse[base.MessageResponse]{
+			Success: true,
+			Data: base.MessageResponse{
+				Message:    "Updater started",
+				ActivityID: utils.StringPtrFromTrimmed(activityID),
+			},
 		},
 	}, nil
 }

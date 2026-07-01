@@ -136,6 +136,21 @@ func TestSetupAPIForSpec_PublicRoutesOverrideSecurity(t *testing.T) {
 	}
 }
 
+func TestSetupAPIForSpec_RegistersAsyncUpdaterStartRoute(t *testing.T) {
+	api := SetupAPIForSpec()
+
+	pathItem := api.OpenAPI().Paths["/environments/{id}/updater/start"]
+	if pathItem == nil || pathItem.Post == nil {
+		t.Fatal("expected POST /environments/{id}/updater/start to be registered")
+	}
+	if pathItem.Post.OperationID != "start-updater" {
+		t.Fatalf("expected operation ID start-updater, got %q", pathItem.Post.OperationID)
+	}
+	if pathItem.Post.Security != nil {
+		t.Fatalf("expected updater start route to inherit API security, got explicit security %v", pathItem.Post.Security)
+	}
+}
+
 func TestSetupAPIForSpec_TemplateReadRoutesProtected(t *testing.T) {
 	api := SetupAPIForSpec()
 
